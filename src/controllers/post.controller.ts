@@ -1,0 +1,128 @@
+import { Request, Response } from 'express'
+import { supabase } from '../config/supabase'
+import { s3Client } from '../config/storage'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { v4 as uuidv4 } from 'uuid'
+
+export const createPost = async (req: Request, res: Response) => {
+  const { description, affiliateLink } = req.body
+  const bannerFile = req.file
+
+  if (!description || !affiliateLink || !bannerFile) {
+    return res.status(400).json({ message: 'Missing required fields or banner file' })
+  }
+
+  try {
+    const fileExt = bannerFile.originalname.split('.').pop()
+    const fileName = `posts/${uuidv4()}.${fileExt}`
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.BACKBLAZE_BUCKET!,
+      Key: fileName,
+      Body: bannerFile.buffer,
+      ContentType: bannerFile.mimetype,
+      ACL: 'public-read',
+    })
+
+    await s3Client.send(command)
+
+    const bannerUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`
+
+    const { data, error } = await supabase
+      .from('admin_posts')
+      .insert({
+        banner_url: bannerUrl,
+        description,
+        affiliate_link: affiliateLink,
+        created_by: req.user!.id,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    res.status(201).json({ message: 'Post created', post: data })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to create post' })
+  }
+}
+
+export const updatePost = async (req: Request, res: Response) => {
+  const { id } = req.params
+  const { description, affiliateLink } = req.body
+  const bannerFile = req.file
+
+  try {
+    let bannerUrl: string | undefined
+
+    if (bannerFile) {
+      const fileExt = bannerFile.originalname.split('.').pop()
+      const fileName = `posts/${uuidv4()}.${fileExt}`
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.BACKBLAZE_BUCKET!,
+        Key: fileName,
+        Body: bannerFile.buffer,
+        ContentType: bannerFile.mimetype,
+        ACL: 'public-read',
+      })
+
+      await s3Client.send(command)
+      bannerUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`
+    }
+
+    const updates: any = {}
+    if (description) updates.description = description
+    if (affiliateLink) updates.affiliate_link = affiliateLink
+    if (bannerUrl) updates.banner_url = bannerUrl
+
+    const { data, error } = await supabase
+      .from('admin_posts')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    res.json({ message: 'Post updated', post: data })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to update post' })
+  }
+}
+
+export const deletePost = async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  try {
+    const { error } = await supabase
+      .from('admin_posts')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    res.json({ message: 'Post deleted' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to delete post' })
+  }
+}
+
+export const getAllPosts = async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('admin_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+
+    res.json(data)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to fetch posts' })
+  }
+}

@@ -1,0 +1,150 @@
+import { Request, Response } from 'express'
+import { supabase } from '../config/supabase'
+
+// Get all users with filters
+export const getAllUsers = async (req: Request, res: Response) => {
+  const { search, subscription, level, page = 1, limit = 20 } = req.query
+  let query = supabase
+    .from('users')
+    .select('id, name, email, upi_id, profile_pic_url, total_downline, level, subscription_status, created_at', { count: 'exact' })
+    .eq('role', 'user')
+    .eq('is_deleted', false)
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
+  }
+  if (subscription !== undefined) {
+    query = query.eq('subscription_status', subscription === 'true')
+  }
+  if (level) {
+    query = query.eq('level', level)
+  }
+
+  const from = (page as number - 1) * (limit as number)
+  const to = from + (limit as number) - 1
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) {
+    return res.status(400).json({ message: error.message })
+  }
+
+  res.json({
+    users: data,
+    total: count,
+    page: Number(page),
+    limit: Number(limit),
+  })
+}
+
+// Soft delete user
+export const deleteUser = async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ is_deleted: true })
+      .eq('id', id)
+      .eq('role', 'user')
+
+    if (error) {
+      return res.status(400).json({ message: error.message })
+    }
+
+    res.json({ message: 'User deleted' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// Send notification to selected users
+export const sendNotification = async (req: Request, res: Response) => {
+  const { userIds, title, message } = req.body
+  if (!message || !Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({ message: 'userIds array and message required' })
+  }
+
+  try {
+    // Insert into notifications with title
+    const { data: notif, error: notifError } = await supabase
+      .from('notifications')
+      .insert({ admin_id: req.user!.id, title: title || 'Notification', message })
+      .select()
+      .single()
+
+    if (notifError) throw notifError
+
+    // Insert into user_notifications
+    const userNotifications = userIds.map((userId: string) => ({
+      user_id: userId,
+      notification_id: notif.id,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('user_notifications')
+      .insert(userNotifications)
+
+    if (insertError) throw insertError
+
+    res.json({ message: 'Notification sent successfully', notificationId: notif.id })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to send notifications' })
+  }
+}
+
+// Get all notifications (admin view)
+export const getNotifications = async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select(`
+        id,
+        message,
+        created_at,
+        users!inner (name),
+        user_notifications (count)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return res.status(400).json({ message: error.message })
+    }
+
+    res.json(data)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// Get dashboard stats
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    // Total users
+    const { count: totalUsers } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_deleted', false)
+
+    // Active subscribers (subscription_status = true AND expiry > now)
+    const { count: activeSubscribers } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_deleted', false)
+      .eq('subscription_status', true)
+      .gt('subscription_expiry', new Date().toISOString())
+
+    res.json({
+      totalUsers,
+      activeSubscribers,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Failed to fetch stats' })
+  }
+}

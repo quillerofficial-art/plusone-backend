@@ -21,14 +21,14 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 }
 
-// Update profile (name, upi_id)
+// Update profile (name, upi_id, mobile_number)
 export const updateProfile = async (req: Request, res: Response) => {
-  const { name, upi_id } = req.body
+  const { name, upi_id, mobile_number } = req.body
 
   try {
     const { error } = await supabase
       .from('users')
-      .update({ name, upi_id })
+      .update({ name, upi_id, mobile_number })
       .eq('id', req.user!.id)
 
     if (error) {

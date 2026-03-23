@@ -4,7 +4,7 @@ import { generateReferralCode, incrementAncestorsDownline } from '../utils/helpe
 
 // Signup with invitation token
 export const signup = async (req: Request, res: Response) => {
-  const { email, password, name, upi_id, token } = req.body
+  const { email, password, name, upi_id, mobile_number, token } = req.body
 
   if (!email || !password || !name || !token) {
     return res.status(400).json({ message: 'Missing required fields' })
@@ -64,6 +64,7 @@ export const signup = async (req: Request, res: Response) => {
         name,
         email,
         upi_id: upi_id || null,
+        mobile_number: mobile_number || null,
         referral_code: referralCode,
         sponsor_id: invToken.sponsor_id,
         parent_id: invToken.parent_id,
@@ -159,6 +160,76 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     res.json({ message: 'Password reset email sent' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// Change password (requires current password for security)
+export const changePassword = async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current and new password required' })
+  }
+
+  try {
+    // Verify current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: req.user!.email,
+      password: currentPassword,
+    })
+    if (signInError) {
+      return res.status(401).json({ message: 'Current password is incorrect' })
+    }
+
+    // Update password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      req.user!.id,
+      { password: newPassword }
+    )
+    if (updateError) {
+      return res.status(400).json({ message: updateError.message })
+    }
+
+    res.json({ message: 'Password changed successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// Referrer Info
+export const getReferrerInfo = async (req: Request, res: Response) => {
+  const { token } = req.query
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ message: 'Token required' })
+  }
+
+  try {
+    const { data: invToken, error } = await supabase
+      .from('invitation_tokens')
+      .select('sponsor_id')
+      .eq('token', token)
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString())
+      .single()
+
+    if (error || !invToken) {
+      return res.status(404).json({ message: 'Invalid or expired invitation token' })
+    }
+
+    const { data: sponsor, error: sponsorError } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', invToken.sponsor_id)
+      .single()
+
+    if (sponsorError || !sponsor) {
+      return res.status(404).json({ message: 'Sponsor not found' })
+    }
+
+    res.json({ referrer: sponsor })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })

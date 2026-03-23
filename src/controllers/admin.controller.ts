@@ -6,7 +6,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
   const { search, subscription, level, page = 1, limit = 20 } = req.query
   let query = supabase
     .from('users')
-    .select('id, name, email, upi_id, profile_pic_url, total_downline, level, subscription_status, created_at', { count: 'exact' })
+    .select('id, name, email, upi_id, mobile_number, profile_pic_url, total_downline, level, subscription_status, created_at', { count: 'exact' })
     .eq('role', 'user')
     .eq('is_deleted', false)
 

@@ -235,3 +235,7 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server error' })
   }
 }
+
+export function sendOtp(arg0: string, sendOtp: any) {
+    throw new Error('Function not implemented.')
+}

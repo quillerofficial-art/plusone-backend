@@ -1,6 +1,8 @@
 import { Request, Response } from 'express'
 import { supabase, supabaseAdmin } from '../config/supabase'
 import { generateReferralCode, incrementAncestorsDownline } from '../utils/helpers'
+import { generateOTP, storeOTP, verifyOTP} from '../utils/otpGenerator'
+import { sendOTP } from '../utils/emailService'
 
 // Signup with invitation token
 export const signup = async (req: Request, res: Response) => {
@@ -239,3 +241,31 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
 export function sendOtp(arg0: string, sendOtp: any) {
     throw new Error('Function not implemented.')
 }
+
+// Send OTP for signup or forgot password
+export const sendOtp = async (req: Request, res: Response) => {
+  const { email, purpose } = req.body;
+  if (!email || !purpose) {
+    return res.status(400).json({ message: 'Email and purpose required' });
+  }
+  try {
+    const { data: users, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email);
+    if (userError) throw userError;
+    if (purpose === 'signup' && users.length > 0) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+    if (purpose === 'forgot' && users.length === 0) {
+      return res.status(400).json({ message: 'Email not found' });
+    }
+    const otp = generateOTP();
+    await storeOTP(email, otp, purpose);
+    await sendOTP(email, otp, purpose);
+    res.json({ message: 'OTP sent successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

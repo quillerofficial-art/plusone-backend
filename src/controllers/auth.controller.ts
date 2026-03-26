@@ -238,10 +238,6 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
   }
 }
 
-export function sendOtp(arg0: string, sendOtp: any) {
-    throw new Error('Function not implemented.')
-}
-
 // Send OTP for signup or forgot password
 export const sendOtp = async (req: Request, res: Response) => {
   const { email, purpose } = req.body;

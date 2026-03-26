@@ -244,24 +244,33 @@ export const sendOtp = async (req: Request, res: Response) => {
   if (!email || !purpose) {
     return res.status(400).json({ message: 'Email and purpose required' });
   }
+
+  // Allowed purposes
+  const allowedPurposes = ['signup', 'forgot'];
+  if (!allowedPurposes.includes(purpose)) {
+    return res.status(400).json({ message: 'Invalid purpose. Must be "signup" or "forgot".' });
+  }
+
   try {
     const { data: users, error: userError } = await supabase
       .from('users')
       .select('id')
       .eq('email', email);
     if (userError) throw userError;
+
     if (purpose === 'signup' && users.length > 0) {
       return res.status(400).json({ message: 'Email already registered' });
     }
     if (purpose === 'forgot' && users.length === 0) {
       return res.status(400).json({ message: 'Email not found' });
     }
+
     const otp = generateOTP();
     await storeOTP(email, otp, purpose);
     await sendOTP(email, otp, purpose);
     res.json({ message: 'OTP sent successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+  } catch (err: any) {
+    console.error('sendOtp error:', err);
+    res.status(500).json({ message: 'Server error', details: err.message });
   }
 };

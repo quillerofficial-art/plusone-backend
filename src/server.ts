@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin.routes'
 import paymentRoutes from './routes/payment.routes'
 import postRoutes from './routes/post.routes'
 import planRoutes from './routes/plan.routes'
+import productRoutes from './routes/product.routes'
 
 dotenv.config()
 
@@ -30,6 +31,7 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/payment', paymentRoutes)
 app.use('/api/posts', postRoutes)
 app.use('/api/plans', planRoutes)
+app.use('/api/products', productRoutes)
 
 // Health check
 app.get('/health', (req, res) => {

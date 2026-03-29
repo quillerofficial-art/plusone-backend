@@ -125,26 +125,66 @@ export const getNotifications = async (req: Request, res: Response) => {
 // Get dashboard stats
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    // Total users
+    // Total users (not deleted)
     const { count: totalUsers } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
-      .eq('is_deleted', false)
+      .eq('is_deleted', false);
 
     // Active subscribers (subscription_status = true AND expiry > now)
-    const { count: activeSubscribers } = await supabase
+    const { count: activeUsers } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('is_deleted', false)
       .eq('subscription_status', true)
-      .gt('subscription_expiry', new Date().toISOString())
+      .gt('subscription_expiry', new Date().toISOString());
+
+    // Inactive users (subscription_status = false OR expired, and not deleted)
+    const { count: inactiveUsers } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_deleted', false)
+      .eq('subscription_status', false);
 
     res.json({
       totalUsers,
-      activeSubscribers,
-    })
+      activeUsers,
+      inactiveUsers,
+    });
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to fetch stats' })
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch stats' });
   }
-}
+};
+
+// Get inactive users with pagination and search
+export const getInactiveUsers = async (req: Request, res: Response) => {
+  const { search, page = 1, limit = 20 } = req.query;
+  let query = supabase
+    .from('users')
+    .select('id, name, email, upi_id, mobile_number, profile_pic_url, total_downline, level, subscription_status, created_at', { count: 'exact' })
+    .eq('is_deleted', false)
+    .eq('subscription_status', false);
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+  }
+
+  const from = (Number(page) - 1) * Number(limit);
+  const to = from + Number(limit) - 1;
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
+
+  res.json({
+    users: data,
+    total: count,
+    page: Number(page),
+    limit: Number(limit),
+  });
+};

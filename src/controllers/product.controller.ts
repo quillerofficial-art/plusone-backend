@@ -3,12 +3,14 @@ import { supabase } from '../config/supabase';
 import { s3Client } from '../config/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
+import { ProductCategory } from '../types/enums'
+import logger from '../utils/logger'
 
 // Get products by category (public)
 export const getProductsByCategory = async (req: Request, res: Response) => {
   let { category } = req.params;
   if (Array.isArray(category)) category = category[0]; // handle array case
-  if (!category || !['banner', 'featured', 'new_arrival'].includes(category)) {
+  if (!category || !Object.values(ProductCategory).includes(category as ProductCategory)) {
     return res.status(400).json({ message: 'Invalid category' });
   }
 
@@ -23,7 +25,7 @@ export const getProductsByCategory = async (req: Request, res: Response) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error(err);
+    logger.error('Error in getProductsByCategory:', { error: err, userId: req.user?.id });
     res.status(500).json({ message: 'Failed to fetch products' });
   }
 };
@@ -69,7 +71,7 @@ export const createProduct = async (req: Request, res: Response) => {
     if (error) throw error;
     res.status(201).json({ message: 'Product created', product: data });
   } catch (err) {
-    console.error(err);
+    logger.error('Error in createProduct:', { error: err, userId: req.user?.id });
     res.status(500).json({ message: 'Failed to create product' });
   }
 };
@@ -115,7 +117,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     if (error) throw error;
     res.json({ message: 'Product updated', product: data });
   } catch (err) {
-    console.error(err);
+    logger.error('Error in updateProduct:', { error: err, userId: req.user?.id });
     res.status(500).json({ message: 'Failed to update product' });
   }
 };
@@ -131,7 +133,7 @@ export const deleteProduct = async (req: Request, res: Response) => {
     if (error) throw error;
     res.json({ message: 'Product deleted' });
   } catch (err) {
-    console.error(err);
+    logger.error('Error in deleteProduct:', { error: err, userId: req.user?.id });
     res.status(500).json({ message: 'Failed to delete product' });
   }
 };

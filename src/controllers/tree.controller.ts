@@ -2,13 +2,15 @@ import { Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import crypto from 'crypto'
 import { isDescendant } from '../utils/helpers'
+import { successResponse, errorResponse } from '../utils/response'
+import logger from '../utils/logger'
 
 // Generate invitation token for a specific parent and position
 export const generateInvite = async (req: Request, res: Response) => {
   const { parent_id, position } = req.body
 
   if (!parent_id || !position || !['left', 'right'].includes(position)) {
-    return res.status(400).json({ message: 'Invalid parent_id or position' })
+    return errorResponse(res, 'Invalid parent_id or position')
   }
 
   try {
@@ -20,18 +22,18 @@ export const generateInvite = async (req: Request, res: Response) => {
       .single()
 
     if (parentError || !parent) {
-      return res.status(404).json({ message: 'Parent node not found' })
+      return errorResponse(res, 'Parent node not found')
     }
 
     // Verify that parent is a descendant of current user
     const isInTree = await isDescendant(req.user!.id, parent_id)
     if (!isInTree) {
-      return res.status(403).json({ message: 'You can only invite under your own tree' })
+      return errorResponse(res, 'You can only invite under your own tree')
     }
 
     // Check if position vacant
     if ((position === 'left' && parent.left_child_id) || (position === 'right' && parent.right_child_id)) {
-      return res.status(400).json({ message: 'Position already occupied' })
+      return errorResponse(res, 'Position already occupied')
     }
 
     // Generate unique token
@@ -49,14 +51,14 @@ export const generateInvite = async (req: Request, res: Response) => {
       })
 
     if (insertError) {
-      return res.status(500).json({ message: 'Failed to generate invite' })
+      return errorResponse(res, 'Failed to generate invite')
     }
 
     const link = `${process.env.BASE_URL}/signup?token=${token}`
-    res.json({ link, token })
+    successResponse(res, { link, token })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in generateInvite:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -70,13 +72,13 @@ export const getRoot = async (req: Request, res: Response) => {
       .single()
 
     if (error || !user) {
-      return res.status(404).json({ message: 'User not found' })
+      return errorResponse(res, 'User not found')
     }
 
-    res.json(user)
+    successResponse(res, user)
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in getRoot:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -91,7 +93,7 @@ export const getChildren = async (req: Request, res: Response) => {
     // Check if node is in user's tree
     const isInTree = await isDescendant(req.user!.id, nodeIdStr)
     if (!isInTree) {
-      return res.status(403).json({ message: 'Access denied' })
+      return errorResponse(res, 'Access denied')
     }
 
     const { data: children, error } = await supabase
@@ -101,12 +103,12 @@ export const getChildren = async (req: Request, res: Response) => {
       .eq('is_deleted', false)
 
     if (error) {
-      return res.status(400).json({ message: error.message })
+      return errorResponse(res, 'Server error')
     }
 
-    res.json(children)
+    successResponse(res, children)
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in getChildren:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }

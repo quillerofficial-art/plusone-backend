@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import Razorpay from 'razorpay'
 import { supabase } from '../config/supabase'
 import crypto from 'crypto'
+import logger from '../utils/logger'
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -10,6 +11,19 @@ const razorpay = new Razorpay({
 
 // Create subscription order with plan
 export const createSubscription = async (req: Request, res: Response) => {
+    const { data: existingOrder } = await supabase
+      .from('payment_transactions')
+      .select('razorpay_order_id')
+      .eq('user_id', req.user!.id)
+      .eq('status', 'created')
+      .single()
+
+    if (existingOrder) {
+      // Return existing order instead of creating new
+      const order = await razorpay.orders.fetch(existingOrder.razorpay_order_id)
+      return res.json(order)
+    }
+    
   const { planId } = req.body
   if (!planId) {
     return res.status(400).json({ message: 'Plan ID required' })
@@ -53,7 +67,7 @@ export const createSubscription = async (req: Request, res: Response) => {
 
     res.json(order)
   } catch (err) {
-    console.error(err)
+    logger.error('Error in createSubscription:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Error creating order' })
   }
 }
@@ -68,8 +82,20 @@ export const verifyPayment = async (req: Request, res: Response) => {
     .update(body)
     .digest('hex')
 
-  if (expectedSignature === razorpay_signature) {
-    try {
+   if (expectedSignature !== razorpay_signature) {
+    return res.status(400).json({ message: 'Invalid signature' })
+  }  
+  const { data: existingTx } = await supabase
+    .from('payment_transactions')
+    .select('status')
+    .eq('razorpay_order_id', razorpay_order_id)
+    .single()
+
+  if (existingTx?.status === 'paid') {
+    return res.json({ status: 'ok', message: 'Already processed' })
+  }
+
+  try {
       // Get transaction and plan details
       const { data: transaction, error: updateError } = await supabase
         .from('payment_transactions')
@@ -93,38 +119,44 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
       const startDate = new Date()
       const endDate = new Date()
-      if (plan) {
-        endDate.setMonth(endDate.getMonth() + plan.duration_months)
-      } else {
-        endDate.setFullYear(endDate.getFullYear() + 1) // fallback 1 year
-      }
+      
+      const { data: user } = await supabase
+      .from('users')
+      .select('subscription_expiry')
+      .eq('id', transaction.user_id)
+      .single()
 
-      // Update user subscription
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          subscription_status: true,
-          subscription_expiry: endDate.toISOString(),
-        })
-        .eq('id', transaction.user_id)
-
-      if (userError) throw userError
-
-      // Update transaction with dates
-      await supabase
-        .from('payment_transactions')
-        .update({
-          subscription_start: startDate.toISOString(),
-          subscription_end: endDate.toISOString(),
-        })
-        .eq('id', transaction.id)
-
-      res.json({ status: 'ok', message: 'Payment verified and subscription activated' })
-    } catch (err) {
-      console.error(err)
-      res.status(500).json({ message: 'Error updating subscription' })
+    let newExpiry = endDate
+    if (user?.subscription_expiry && new Date(user.subscription_expiry) > startDate) {
+      newExpiry = new Date(user.subscription_expiry)
+      newExpiry.setMonth(newExpiry.getMonth() + (plan?.duration_months || 12))
+    } else if (plan) {
+      newExpiry.setMonth(newExpiry.getMonth() + plan.duration_months)
+    } else {
+      newExpiry.setFullYear(newExpiry.getFullYear() + 1)
     }
-  } else {
-    res.status(400).json({ message: 'Invalid signature' })
+
+    const { error: userError } = await supabase
+      .from('users')
+      .update({
+        subscription_status: true,
+        subscription_expiry: newExpiry.toISOString(),
+      })
+      .eq('id', transaction.user_id)
+
+    if (userError) throw userError
+
+    await supabase
+      .from('payment_transactions')
+      .update({
+        subscription_start: startDate.toISOString(),
+        subscription_end: newExpiry.toISOString(),
+      })
+      .eq('id', transaction.id)
+
+    res.json({ status: 'ok', message: 'Payment verified and subscription activated' })
+    } catch (err) {
+    logger.error('Error in verifyPayment:', { error: err, userId: req.user?.id })
+    res.status(500).json({ message: 'Error updating subscription' })
   }
 }

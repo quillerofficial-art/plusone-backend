@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import { supabase } from '../config/supabase'
+import logger from '../utils/logger'
+import { successResponse, errorResponse } from '../utils/response'
 
 // Get own profile
 export const getProfile = async (req: Request, res: Response) => {
@@ -14,7 +16,7 @@ export const getProfile = async (req: Request, res: Response) => {
       .single();
 
     if (userError || !user) {
-      return res.status(404).json({ message: 'User not found' });
+      return errorResponse(res, 'User not found');
     }
 
     // Count total referrals (users who have this user as sponsor)
@@ -33,14 +35,14 @@ export const getProfile = async (req: Request, res: Response) => {
     if (inactiveError) throw inactiveError;
     const inactiveDownlineCount = inactiveCountData || 0;
 
-    res.json({
+    successResponse(res, {
       ...user,
       total_referrals: totalReferrals || 0,
       inactive_downline_count: inactiveDownlineCount,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    logger.error('Error in getProfile:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error');
   }
 };
 
@@ -58,10 +60,10 @@ export const updateProfile = async (req: Request, res: Response) => {
       return res.status(400).json({ message: error.message })
     }
 
-    res.json({ message: 'Profile updated' })
+    successResponse(res, { message: 'Profile updated' })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in updateProfile:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -80,13 +82,13 @@ export const getNotifications = async (req: Request, res: Response) => {
       .order('created_at', { ascending: false })
 
     if (error) {
-      return res.status(400).json({ message: error.message })
+      return errorResponse(res, error.message )
     }
 
-    res.json(notifications)
+    successResponse(res, notifications)
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in getNotifications:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -102,13 +104,13 @@ export const markNotificationRead = async (req: Request, res: Response) => {
       .eq('user_id', req.user!.id)
 
     if (error) {
-      return res.status(400).json({ message: error.message })
+      return errorResponse(res, error.message )
     }
 
-    res.json({ message: 'Notification marked as read' })
+    successResponse(res, { message: 'Notification marked as read' })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in markNotificationRead:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -122,12 +124,12 @@ export const getUserById = async (req: Request, res: Response) => {
       .single();
 
     if (error || !data) {
-      return res.status(404).json({ message: 'User not found' });
+      return errorResponse(res, 'User not found');
     }
 
-    res.json(data);
+    successResponse(res, data);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    logger.error('Error in getUserById:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error');
   }
 };

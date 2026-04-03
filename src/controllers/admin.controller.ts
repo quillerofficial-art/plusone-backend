@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import { supabase } from '../config/supabase'
+import { successResponse, errorResponse} from '../utils/response'
+import logger from '../utils/logger'
 
 // Get all users with filters
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -28,10 +30,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
     .range(from, to)
 
   if (error) {
-    return res.status(400).json({ message: error.message })
+  return errorResponse(res, error.message)
   }
 
-  res.json({
+  successResponse(res, {
     users: data,
     total: count,
     page: Number(page),
@@ -54,9 +56,9 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: error.message })
     }
 
-    res.json({ message: 'User deleted' })
+    successResponse(res, { message: 'User deleted' })
   } catch (err) {
-    console.error(err)
+    logger.error('Error in deleteUser:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Server error' })
   }
 }
@@ -90,10 +92,10 @@ export const sendNotification = async (req: Request, res: Response) => {
 
     if (insertError) throw insertError
 
-    res.json({ message: 'Notification sent successfully', notificationId: notif.id })
+    successResponse(res, { message: 'Notification sent successfully', notificationId: notif.id })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to send notifications' })
+    logger.error('Error in sendNotification:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Failed to send notifications')
   }
 }
 
@@ -112,13 +114,13 @@ export const getNotifications = async (req: Request, res: Response) => {
       .order('created_at', { ascending: false })
 
     if (error) {
-      return res.status(400).json({ message: error.message })
+      return errorResponse(res, error.message)
     }
 
-    res.json(data)
+    successResponse(res, { notifications: data })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in getNotifications:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error' )
   }
 }
 
@@ -146,14 +148,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .eq('is_deleted', false)
       .eq('subscription_status', false);
 
-    res.json({
+    successResponse(res, {
       totalUsers,
       activeUsers,
       inactiveUsers,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch stats' });
+    logger.error('Error in getDashboardStats:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Failed to fetch stats' );
   }
 };
 
@@ -178,10 +180,10 @@ export const getInactiveUsers = async (req: Request, res: Response) => {
     .range(from, to);
 
   if (error) {
-    return res.status(400).json({ message: error.message });
+    return errorResponse(res, 'Failed to fetch inactive users' );
   }
 
-  res.json({
+  successResponse(res, {
     users: data,
     total: count,
     page: Number(page),

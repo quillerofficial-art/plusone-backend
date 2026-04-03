@@ -3,6 +3,9 @@ import { supabase, supabaseAdmin } from '../config/supabase'
 import { generateReferralCode, incrementAncestorsDownline } from '../utils/helpers'
 import { generateOTP, storeOTP, verifyOTP} from '../utils/otpGenerator'
 import { sendOTP } from '../utils/emailService'
+import { OtpPurpose } from '../types/enums'
+import { successResponse, errorResponse } from '../utils/response'
+import logger from '../utils/logger'
 
 // Signup with invitation token
 export const signup = async (req: Request, res: Response) => {
@@ -11,6 +14,17 @@ export const signup = async (req: Request, res: Response) => {
   if (!email || !password || !name || !token) {
     return res.status(400).json({ message: 'Missing required fields' })
   }
+
+  const emailRegex = /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' })
+  }
+
+    if (password.length < 8) {
+    return res.status(400).json({ message: 'Password must be at least 8 characters' })
+  }
+
+  let userId: string | null = null
 
   try {
     // 1. Validate invitation token
@@ -23,7 +37,7 @@ export const signup = async (req: Request, res: Response) => {
       .single()
 
     if (tokenError || !invToken) {
-      return res.status(400).json({ message: 'Invalid or expired invitation token' })
+      return errorResponse(res, 'Invalid or expired invitation token')
     }
 
     // 2. Check if position is still vacant
@@ -41,7 +55,7 @@ export const signup = async (req: Request, res: Response) => {
       (invToken.position === 'left' && parent.left_child_id) ||
       (invToken.position === 'right' && parent.right_child_id)
     ) {
-      return res.status(400).json({ message: 'Position already occupied' })
+      return errorResponse(res, 'Position already occupied')
     }
 
     // 3. Create user in Supabase Auth (using admin client to auto-confirm email)
@@ -52,10 +66,10 @@ export const signup = async (req: Request, res: Response) => {
     })
 
     if (authError) {
-      return res.status(400).json({ message: authError.message })
+      return errorResponse(res, authError.message )
     }
 
-    const userId = authUser.user.id
+    userId = authUser.user.id
 
     // 4. Insert into public.users
     const referralCode = generateReferralCode()
@@ -73,11 +87,7 @@ export const signup = async (req: Request, res: Response) => {
         position: invToken.position,
       })
 
-    if (dbError) {
-      // Rollback: delete auth user
-      await supabaseAdmin.auth.admin.deleteUser(userId)
-      return res.status(500).json({ message: 'Failed to create user profile' })
-    }
+     if (dbError) throw dbError  // ✅ Throw, not return
 
     // 5. Update parent's child pointer
     const updateField = invToken.position === 'left' 
@@ -97,10 +107,13 @@ export const signup = async (req: Request, res: Response) => {
       .update({ used: true })
       .eq('id', invToken.id)
 
-    res.status(201).json({ message: 'User created successfully', userId })
+    successResponse(res, { message: 'User created successfully', userId })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+     if (userId) {
+      await supabaseAdmin.auth.admin.deleteUser(userId)
+    }
+    logger.error('Error in register:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error' )
   }
 }
 
@@ -130,17 +143,17 @@ export const login = async (req: Request, res: Response) => {
       .single()
 
     if (profileError) {
-      return res.status(500).json({ message: 'Failed to fetch user profile' })
+      return errorResponse(res, 'Failed to fetch user profile')
     }
 
-    res.json({
+    successResponse(res, {
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
       user: userProfile,
     })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in login:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -149,7 +162,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body
 
   if (!email) {
-    return res.status(400).json({ message: 'Email required' })
+    return errorResponse(res, 'Email required')
   }
 
   try {
@@ -158,13 +171,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
     })
 
     if (error) {
-      return res.status(400).json({ message: error.message })
+      return errorResponse(res, error.message )
     }
 
-    res.json({ message: 'Password reset email sent' })
+    successResponse(res, { message: 'Password reset email sent' })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in forgotPassword:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -172,7 +185,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const changePassword = async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ message: 'Current and new password required' })
+    return errorResponse(res, 'Current and new password required')
   }
 
   try {
@@ -182,7 +195,7 @@ export const changePassword = async (req: Request, res: Response) => {
       password: currentPassword,
     })
     if (signInError) {
-      return res.status(401).json({ message: 'Current password is incorrect' })
+      return errorResponse(res, 'Current password is incorrect')
     }
 
     // Update password
@@ -191,13 +204,13 @@ export const changePassword = async (req: Request, res: Response) => {
       { password: newPassword }
     )
     if (updateError) {
-      return res.status(400).json({ message: updateError.message })
+      return errorResponse(res, updateError.message )
     }
 
-    res.json({ message: 'Password changed successfully' })
+    successResponse(res, { message: 'Password changed successfully' })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in changePassword:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error')
   }
 }
 
@@ -205,7 +218,7 @@ export const changePassword = async (req: Request, res: Response) => {
 export const getReferrerInfo = async (req: Request, res: Response) => {
   const { token } = req.query
   if (!token || typeof token !== 'string') {
-    return res.status(400).json({ message: 'Token required' })
+    return errorResponse(res, 'Token required' )
   }
 
   try {
@@ -218,7 +231,7 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
       .single()
 
     if (error || !invToken) {
-      return res.status(404).json({ message: 'Invalid or expired invitation token' })
+      return errorResponse(res, 'Invalid or expired invitation token' )
     }
 
     const { data: sponsor, error: sponsorError } = await supabase
@@ -228,13 +241,13 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
       .single()
 
     if (sponsorError || !sponsor) {
-      return res.status(404).json({ message: 'Sponsor not found' })
+      return errorResponse(res, 'Sponsor not found' )
     }
 
-    res.json({ referrer: sponsor })
+    successResponse(res, { referrer: sponsor })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in getReferrerInfo:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Server error' )
   }
 }
 
@@ -242,13 +255,13 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
 export const sendOtp = async (req: Request, res: Response) => {
   const { email, purpose } = req.body;
   if (!email || !purpose) {
-    return res.status(400).json({ message: 'Email and purpose required' });
+    return errorResponse(res, 'Email and purpose required' );
   }
 
   // Allowed purposes
-  const allowedPurposes = ['signup', 'forgot'];
+  const allowedPurposes = [OtpPurpose.SIGNUP, OtpPurpose.FORGOT];
   if (!allowedPurposes.includes(purpose)) {
-    return res.status(400).json({ message: 'Invalid purpose. Must be "signup" or "forgot".' });
+    return errorResponse(res, 'Invalid purpose. Must be "signup" or "forgot".' );
   }
 
   try {
@@ -258,19 +271,34 @@ export const sendOtp = async (req: Request, res: Response) => {
       .eq('email', email);
     if (userError) throw userError;
 
-    if (purpose === 'signup' && users.length > 0) {
-      return res.status(400).json({ message: 'Email already registered' });
+    if (purpose === OtpPurpose.SIGNUP && users.length > 0) {
+      return errorResponse(res, 'Email already registered' );
     }
-    if (purpose === 'forgot' && users.length === 0) {
-      return res.status(400).json({ message: 'Email not found' });
+    if (purpose === OtpPurpose.FORGOT && users.length === 0) {
+      return errorResponse(res, 'Email not found' );
     }
 
     const otp = generateOTP();
     await storeOTP(email, otp, purpose);
     await sendOTP(email, otp, purpose);
-    res.json({ message: 'OTP sent successfully' });
+    successResponse(res, { message: 'OTP sent successfully' });
   } catch (err: any) {
-    console.error('sendOtp error:', err);
-    res.status(500).json({ message: 'Server error', details: err.message });
+    logger.error('Error in sendOtp:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error');
   }
 };
+
+//logout
+export const logout = async (req: Request, res: Response) => {
+  try {
+    // Supabase session is client-side, but you can:
+    // 1. Add token to blacklist (if using JWT blacklist)
+    // 2. Or just instruct client to delete token
+    
+    // For now, just return success
+    successResponse(res, { message: 'Logged out successfully' })
+  } catch (err) {
+    logger.error('Error in logout:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Server error' )
+  }
+}

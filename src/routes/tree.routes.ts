@@ -6,7 +6,7 @@ import { requireActiveSubscription } from '../middlewares/subscription.middlewar
 const router = express.Router()
 
 router.use(authMiddleware)
-router.use(authMiddleware, requireActiveSubscription)
+router.use(requireActiveSubscription)
 
 router.post('/generate-invite', generateInvite)
 router.get('/root', getRoot)

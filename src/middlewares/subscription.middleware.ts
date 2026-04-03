@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { supabase } from '../config/supabase'
+import logger from '../utils/logger'
 
 export const requireActiveSubscription = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -22,7 +23,7 @@ export const requireActiveSubscription = async (req: Request, res: Response, nex
 
     next()
   } catch (err) {
-    console.error(err)
+    logger.error('Error in requireActiveSubscription:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Server error' })
   }
 }

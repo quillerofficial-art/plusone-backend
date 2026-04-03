@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { supabase } from '../config/supabase'
 import { SubscriptionPlan } from '../types'
+import logger from '../utils/logger'
 
 // Admin: Get all plans
 export const getPlans = async (req: Request, res: Response) => {
@@ -13,7 +14,7 @@ export const getPlans = async (req: Request, res: Response) => {
     if (error) throw error
     res.json(data)
   } catch (err) {
-    console.error(err)
+    logger.error('Error in getPlans:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Failed to fetch plans' })
   }
 }
@@ -47,7 +48,7 @@ export const upsertPlan = async (req: Request, res: Response) => {
     if (result.error) throw result.error
     res.json(result.data)
   } catch (err) {
-    console.error(err)
+    logger.error('Error in upsertPlan:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Failed to save plan' })
   }
 }
@@ -63,7 +64,7 @@ export const deletePlan = async (req: Request, res: Response) => {
     if (error) throw error
     res.json({ message: 'Plan deleted' })
   } catch (err) {
-    console.error(err)
+    logger.error('Error in deletePlan:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Failed to delete plan' })
   }
 }

@@ -3,13 +3,15 @@ import { supabase } from '../config/supabase'
 import { s3Client } from '../config/storage'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
+import { successResponse, errorResponse } from '../utils/response'
+import logger from '../utils/logger'
 
 export const createPost = async (req: Request, res: Response) => {
   const { description, affiliateLink } = req.body
   const bannerFile = req.file
 
   if (!description || !affiliateLink || !bannerFile) {
-    return res.status(400).json({ message: 'Missing required fields or banner file' })
+    return errorResponse(res, 'Missing required fields or banner file')
   }
 
   try {
@@ -41,10 +43,10 @@ export const createPost = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.status(201).json({ message: 'Post created', post: data })
+    successResponse(res, { message: 'Post created', post: data })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to create post' })
+    logger.error('Error in createPost:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Failed to create post')
   }
 }
 
@@ -86,10 +88,10 @@ export const updatePost = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.json({ message: 'Post updated', post: data })
+    successResponse(res, { message: 'Post updated', post: data })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to update post' })
+    logger.error('Error in updatePost:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Failed to update post')
   }
 }
 
@@ -104,10 +106,10 @@ export const deletePost = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.json({ message: 'Post deleted' })
+    successResponse(res, { message: 'Post deleted' })
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to delete post' })
+    logger.error('Error in deletePost:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Failed to delete post')
   }
 }
 
@@ -120,9 +122,9 @@ export const getAllPosts = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.json(data)
+    successResponse(res, data)
   } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Failed to fetch posts' })
+    logger.error('Error in getAllPosts:', { error: err, userId: req.user?.id })
+    errorResponse(res, 'Failed to fetch posts')
   }
 }

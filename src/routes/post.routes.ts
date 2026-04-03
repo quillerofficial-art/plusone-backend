@@ -3,11 +3,15 @@ import { createPost, updatePost, deletePost, getAllPosts } from '../controllers/
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { adminMiddleware } from '../middlewares/admin.middleware'
 import { uploadSingle } from '../middlewares/upload.middleware'
+import { requireActiveSubscription } from '../middlewares/subscription.middleware'
 
 const router = express.Router()
 
+router.use(authMiddleware)
+router.use(requireActiveSubscription)
+
 // Public route (any authenticated user)
-router.get('/', authMiddleware, getAllPosts)
+router.get('/', getAllPosts)
 
 // Admin routes
 router.post('/', authMiddleware, adminMiddleware, uploadSingle, createPost)

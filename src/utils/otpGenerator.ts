@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcrypt'
 import { supabase } from '../config/supabase';
 
 export const generateOTP = () => {
@@ -7,9 +8,10 @@ export const generateOTP = () => {
 
 export const storeOTP = async (email: string, otp: string, purpose: string) => {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-  await supabase.from('otps').insert({
+  const hashedOtp = await bcrypt.hash(otp, 10)
+   await supabase.from('otps').insert({
     email,
-    otp_code: otp,
+    otp_code: hashedOtp,
     purpose,
     expires_at: expiresAt.toISOString(),
   });
@@ -18,19 +20,23 @@ export const storeOTP = async (email: string, otp: string, purpose: string) => {
 export const verifyOTP = async (email: string, otp: string, purpose: string) => {
   const { data, error } = await supabase
     .from('otps')
-    .select('id')
+    .select('id, otp_code')
     .eq('email', email)
-    .eq('otp_code', otp)
     .eq('purpose', purpose)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
-    .limit(1);
+    .limit(1)
 
   if (error || !data || data.length === 0) {
     return false;
   }
 
-  // Delete used OTP
-  await supabase.from('otps').delete().eq('id', data[0].id);
-  return true;
-};
+   // ✅ Compare with hashed OTP
+  const isValid = await bcrypt.compare(otp, data[0].otp_code)
+  
+  if (isValid) {
+    await supabase.from('otps').delete().eq('id', data[0].id)
+  }
+  
+  return isValid
+}

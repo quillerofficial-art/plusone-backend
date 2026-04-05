@@ -190,3 +190,94 @@ export const getInactiveUsers = async (req: Request, res: Response) => {
     limit: Number(limit),
   });
 };
+
+export const sendNotificationToAll = async (req: Request, res: Response) => {
+  const { title, message } = req.body;
+  if (!message) {
+    return res.status(400).json({ message: 'Message is required' });
+  }
+
+  try {
+    // Get all users (who are not deleted)
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('is_deleted', false);
+
+    if (usersError) throw usersError;
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    const userIds = users.map(u => u.id);
+
+    // Insert notification
+    const { data: notif, error: notifError } = await supabase
+      .from('notifications')
+      .insert({ admin_id: req.user!.id, title: title || 'Notification', message })
+      .select()
+      .single();
+
+    if (notifError) throw notifError;
+
+    // Insert user_notifications in batches (to avoid large single query)
+    const batchSize = 500;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = userIds.slice(i, i + batchSize).map(userId => ({
+        user_id: userId,
+        notification_id: notif.id,
+      }));
+      await supabase.from('user_notifications').insert(batch);
+    }
+
+    res.json({ 
+      message: 'Notification sent to all users', 
+      notificationId: notif.id,
+      totalRecipients: userIds.length 
+    });
+  } catch (err) {
+    logger.error('Error in sendNotificationToAll:', { error: err, userId: req.user?.id });
+    res.status(500).json({ message: 'Failed to send notifications' });
+  }
+};
+
+
+export const broadcastNotification = async (req: Request, res: Response) => {
+  const { title, message } = req.body;
+  if (!message) {
+    return res.status(400).json({ message: 'Message is required' });
+  }
+
+  try {
+    // Get all active users (not deleted)
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('is_deleted', false);
+
+    if (usersError) throw usersError;
+
+    const { data: notif, error: notifError } = await supabase
+      .from('notifications')
+      .insert({ admin_id: req.user!.id, title: title || 'Notification', message })
+      .select()
+      .single();
+
+    if (notifError) throw notifError;
+
+    // Batch insert
+    const batchSize = 500;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize).map(u => ({
+        user_id: u.id,
+        notification_id: notif.id,
+      }));
+      await supabase.from('user_notifications').insert(batch);
+    }
+
+    res.json({ message: 'Broadcast sent', notificationId: notif.id, totalRecipients: users.length });
+  } catch (err) {
+    logger.error('Error in broadcastNotification:', err);
+    res.status(500).json({ message: 'Failed to send broadcast' });
+  }
+};

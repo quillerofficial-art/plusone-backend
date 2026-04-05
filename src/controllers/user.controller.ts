@@ -35,10 +35,16 @@ export const getProfile = async (req: Request, res: Response) => {
     if (inactiveError) throw inactiveError;
     const inactiveDownlineCount = inactiveCountData || 0;
 
+    // Compute status string
+    const userStatus = user.subscription_status === true && 
+  (user.subscription_expiry === null || new Date(user.subscription_expiry) > new Date())
+  ? 'active' : 'inactive';
+
     successResponse(res, {
       ...user,
       total_referrals: totalReferrals || 0,
       inactive_downline_count: inactiveDownlineCount,
+      status: userStatus,
     });
   } catch (err) {
     logger.error('Error in getProfile:', { error: err, userId: req.user?.id });
@@ -119,7 +125,7 @@ export const getUserById = async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, email, profile_pic_url, level, subscription_status, upi_id, created_at, mobile_number')
+      .select('id, name, email, profile_pic_url, level, subscription_status, subscription_expiry, created_at, mobile_number')
       .eq('id', id)
       .single();
 
@@ -127,7 +133,14 @@ export const getUserById = async (req: Request, res: Response) => {
       return errorResponse(res, 'User not found');
     }
 
-    successResponse(res, data);
+    const userStatus = data.subscription_status === true &&
+      (data.subscription_expiry === null || new Date(data.subscription_expiry) > new Date())
+      ? 'active' : 'inactive';
+
+    successResponse(res, {
+      ...data,
+      status: userStatus,
+    });
   } catch (err) {
     logger.error('Error in getUserById:', { error: err, userId: req.user?.id });
     errorResponse(res, 'Server error');

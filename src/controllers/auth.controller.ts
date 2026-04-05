@@ -302,3 +302,8 @@ export const logout = async (req: Request, res: Response) => {
     errorResponse(res, 'Server error' )
   }
 }
+
+export const verifyToken = async (req: Request, res: Response) => {
+  // Token already verified by authMiddleware
+  successResponse(res, { valid: true, user: { id: req.user!.id, email: req.user!.email } });
+};

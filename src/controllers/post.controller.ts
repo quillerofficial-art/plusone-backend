@@ -8,7 +8,8 @@ import logger from '../utils/logger'
 
 export const createPost = async (req: Request, res: Response) => {
   const { description, affiliateLink } = req.body
-  const bannerFile = req.file
+    const bannerFile = req.file || (req.files && !Array.isArray(req.files) && 'image' in req.files ? req.files['image'][0] : null);
+  
 
   if (!description || !affiliateLink || !bannerFile) {
     return errorResponse(res, 'Missing required fields or banner file')

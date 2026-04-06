@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express'
-import { createSubscription, verifyPayment } from '../controllers/payment.controller'
+import { createSubscription, getPaymentStatus, verifyPayment } from '../controllers/payment.controller'
 import { authMiddleware } from '../middlewares/auth.middleware'
 import { validate, createSubscriptionSchema } from '../validators/payment.validator'
 
@@ -13,6 +13,7 @@ const verifyWebhookSecret = (req: Request, res: Response, next: NextFunction) =>
   next()
 }
 
+router.get('/status/:orderId', authMiddleware, getPaymentStatus);
 router.post('/create-subscription', authMiddleware, validate(createSubscriptionSchema), createSubscription)
 router.post('/verify', verifyWebhookSecret as any, verifyPayment)
 

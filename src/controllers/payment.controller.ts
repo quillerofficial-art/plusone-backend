@@ -65,7 +65,12 @@ export const createSubscription = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.json(order)
+    res.json({
+      razorpay_key: process.env.RAZORPAY_KEY_ID,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
   } catch (err) {
     logger.error('Error in createSubscription:', { error: err, userId: req.user?.id })
     res.status(500).json({ message: 'Error creating order' })
@@ -160,3 +165,16 @@ export const verifyPayment = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error updating subscription' })
   }
 }
+
+// Get payment status by order ID
+export const getPaymentStatus = async (req: Request, res: Response) => {
+  const { orderId } = req.params;
+  const { data, error } = await supabase
+    .from('payment_transactions')
+    .select('status, razorpay_payment_id')
+    .eq('razorpay_order_id', orderId)
+    .single();
+  
+  if (error) return res.status(404).json({ message: 'Order not found' });
+  res.json({ status: data.status, paymentId: data.razorpay_payment_id });
+};

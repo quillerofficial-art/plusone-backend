@@ -67,7 +67,7 @@ export const getRoot = async (req: Request, res: Response) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, name, profile_pic_url, left_child_id, right_child_id')
+      .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id')
       .eq('id', req.user!.id)
       .single()
 
@@ -98,7 +98,7 @@ export const getChildren = async (req: Request, res: Response) => {
 
     const { data: children, error } = await supabase
       .from('users')
-      .select('id, name, profile_pic_url, left_child_id, right_child_id')
+      .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id')
       .eq('parent_id', nodeIdStr)
       .eq('is_deleted', false)
 

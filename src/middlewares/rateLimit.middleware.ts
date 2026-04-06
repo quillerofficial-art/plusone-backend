@@ -9,7 +9,7 @@ export const authRateLimiter = rateLimit({
 
 export const otpRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 OTPs per hour
+  max: 10, // 10 OTPs per hour
   message: { message: 'Too many OTP requests, please try again after an hour' },
 })
 

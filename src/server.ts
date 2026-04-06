@@ -32,6 +32,7 @@ dotenv.config()
 const app = express()
 app.use(helmet())
 app.use(apiRateLimiter);
+app.set('trust proxy', 1) // Trust first proxy (Render)
 const PORT = process.env.PORT || 8000
 
 app.use(cors({

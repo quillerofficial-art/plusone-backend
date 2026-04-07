@@ -7,6 +7,14 @@ import { OtpPurpose } from '../types/enums'
 import { successResponse, errorResponse } from '../utils/response'
 import logger from '../utils/logger'
 
+
+export const verifyOtp = async (req: Request, res: Response) => {
+  const { email, otp, purpose } = req.body;
+  const isValid = await verifyOTP(email, otp, purpose);
+  if (!isValid) return errorResponse(res, 'Invalid or expired OTP');
+  successResponse(res, { valid: true });
+};
+
 // Signup with invitation token
 export const signup = async (req: Request, res: Response) => {
   const { email, password, name, upi_id, mobile_number, token } = req.body

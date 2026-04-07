@@ -57,6 +57,12 @@ export const signup = async (req: Request, res: Response) => {
     ) {
       return errorResponse(res, 'Position already occupied')
     }
+    
+    // 3. Verify OTP for signup
+    const isValid = await verifyOTP(email, req.body.otp, OtpPurpose.SIGNUP);
+     if (!isValid) {
+     return errorResponse(res, 'Invalid or expired OTP');
+    }
 
     // 3. Create user in Supabase Auth (using admin client to auto-confirm email)
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -306,4 +312,38 @@ export const logout = async (req: Request, res: Response) => {
 export const verifyToken = async (req: Request, res: Response) => {
   // Token already verified by authMiddleware
   successResponse(res, { valid: true, user: { id: req.user!.id, email: req.user!.email } });
+};
+
+
+// This endpoint is for resetting password using the token sent by Supabase (after user clicks the link in email)
+export const resetPassword = async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return errorResponse(res, 'Token and new password required');
+  }
+
+  try {
+    // Supabase Admin se user fetch using the access token
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return errorResponse(res, 'Invalid or expired token');
+    }
+
+    // Update password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      user.id,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      return errorResponse(res, updateError.message);
+    }
+
+    successResponse(res, { message: 'Password reset successfully' });
+  } catch (err) {
+    logger.error('Reset password error:', err);
+    errorResponse(res, 'Server error');
+  }
 };

@@ -18,11 +18,15 @@ export const createSubscription = async (req: Request, res: Response) => {
       .eq('status', 'created')
       .single()
 
-    if (existingOrder) {
-      // Return existing order instead of creating new
-      const order = await razorpay.orders.fetch(existingOrder.razorpay_order_id)
-      return res.json(order)
-    }
+     if (existingOrder) {
+    const order = await razorpay.orders.fetch(existingOrder.razorpay_order_id);
+    return res.json({
+      razorpay_key: process.env.RAZORPAY_KEY_ID,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    });
+  }
     
   const { planId } = req.body
   if (!planId) {

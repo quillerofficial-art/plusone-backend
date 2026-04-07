@@ -41,11 +41,12 @@ export const createSubscription = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid plan' })
     }
 
+    const shortUserId = req.user!.id.replace(/-/g, '').substring(0, 10);
     const options = {
-      amount: plan.amount, // already in paise
-      currency: 'INR',
-      receipt: `receipt_${req.user!.id}_${Date.now()}`,
-      payment_capture: 1,
+     amount: plan.amount,
+     currency: 'INR',
+     receipt: `rcpt_${shortUserId}_${Date.now()}`,
+     payment_capture: 1,
     }
 
     const order = await razorpay.orders.create(options)

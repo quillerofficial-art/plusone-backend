@@ -69,7 +69,7 @@ export const createSubscription = async (req: Request, res: Response) => {
     res.json({
       razorpay_key: process.env.RAZORPAY_KEY_ID,
       order_id: order.id,
-      amount: order.amount,
+      amount: Number(order.amount) * 100,
       currency: order.currency,
     });
   } catch (err) {

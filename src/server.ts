@@ -13,7 +13,7 @@ import { requestIdMiddleware } from './middlewares/requestId.middleware'
 import { errorHandler } from './middlewares/error.middleware'
 import { verifyPayment } from './controllers/payment.controller'
 
-validateEnv()
+dotenv.config()
 
 
 // Import routes
@@ -27,7 +27,7 @@ import postRoutes from './routes/post.routes'
 import planRoutes from './routes/plan.routes'
 import productRoutes from './routes/product.routes'
 
-dotenv.config()
+validateEnv()
 
 const app = express()
 app.use(helmet())

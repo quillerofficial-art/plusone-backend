@@ -98,7 +98,7 @@ export const getChildren = async (req: Request, res: Response) => {
 
     const { data: children, error } = await supabase
       .from('users')
-      .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id')
+      .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id, position')
       .eq('parent_id', nodeIdStr)
       .eq('is_deleted', false)
 
@@ -106,7 +106,14 @@ export const getChildren = async (req: Request, res: Response) => {
       return errorResponse(res, 'Server error')
     }
 
-    successResponse(res, children)
+     const transformedChildren = children.map(child => ({
+      ...child,
+      side: child.position,   // 'left' or 'right'
+      position: undefined,    // optional: remove original position field if not needed
+    }));
+
+    
+    successResponse(res, transformedChildren)
   } catch (err) {
     logger.error('Error in getChildren:', { error: err, userId: req.user?.id })
     errorResponse(res, 'Server error')

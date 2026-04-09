@@ -35,8 +35,8 @@ export const createProduct = async (req: Request, res: Response) => {
   const { title, description, price, link, category } = req.body;
   const imageFile = req.file;
 
-  if (!title || !category || !imageFile) {
-    return res.status(400).json({ message: 'Title, category, and image are required' });
+  if (!category || !imageFile) {
+    return res.status(400).json({ message: 'Category and image are required' });
   }
 
   try {

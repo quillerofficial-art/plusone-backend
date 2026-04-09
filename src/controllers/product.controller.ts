@@ -31,18 +31,18 @@ export const getProductsByCategory = async (req: Request, res: Response) => {
 };
 
 // Admin: Create product (with image upload)
-export const createProduct = async (req: Request, res: Response) => {
-  const { title, description, price, link, category } = req.body;
+// Banner product (title optional)
+export const createBannerProduct = async (req: Request, res: Response) => {
+  const { description, link } = req.body;
   const imageFile = req.file;
 
-  if (!category || !imageFile) {
-    return res.status(400).json({ message: 'Category and image are required' });
+  if (!description || !imageFile) {
+    return res.status(400).json({ message: 'Description and image are required for banner' });
   }
 
   try {
     const fileExt = imageFile.originalname.split('.').pop();
     const fileName = `products/${uuidv4()}.${fileExt}`;
-
     const command = new PutObjectCommand({
       Bucket: process.env.BACKBLAZE_BUCKET!,
       Key: fileName,
@@ -50,29 +50,115 @@ export const createProduct = async (req: Request, res: Response) => {
       ContentType: imageFile.mimetype,
       ACL: 'public-read',
     });
-
     await s3Client.send(command);
     const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
-
+    
     const { data, error } = await supabase
       .from('products')
       .insert({
-        title: title || null,
-        description: description || null,
+        title: null,
+        description,
         image_url: imageUrl,
-        price: price ? parseFloat(price) : null,
+        price: null,
         link: link || null,
-        category: category || null,
+        category: 'banner',
         is_active: true,
       })
       .select()
       .single();
 
     if (error) throw error;
-    res.status(201).json({ message: 'Product created', product: data });
+    res.status(201).json({ message: 'Banner created', product: data });
   } catch (err) {
-    logger.error('Error in createProduct:', { error: err, userId: req.user?.id });
-    res.status(500).json({ message: 'Failed to create product' });
+    logger.error('Error in createBannerProduct:', err);
+    res.status(500).json({ message: 'Failed to create banner' });
+  }
+};
+
+// Featured product (title, price, link required)
+export const createFeaturedProduct = async (req: Request, res: Response) => {
+  const { title, description, price, link } = req.body;
+  const imageFile = req.file;
+
+  if (!title || !price || !link || !imageFile) {
+    return res.status(400).json({ message: 'Title, price, link, and image are required for featured product' });
+  }
+
+  try {
+    const fileExt = imageFile.originalname.split('.').pop();
+    const fileName = `products/${uuidv4()}.${fileExt}`;
+    const command = new PutObjectCommand({
+      Bucket: process.env.BACKBLAZE_BUCKET!,
+      Key: fileName,
+      Body: imageFile.buffer,
+      ContentType: imageFile.mimetype,
+      ACL: 'public-read',
+    });
+    await s3Client.send(command);
+    const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
+    
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        title,
+        description: description || null,
+        image_url: imageUrl,
+        price: parseFloat(price),
+        link,
+        category: 'featured',
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ message: 'Featured product created', product: data });
+  } catch (err) {
+    logger.error('Error in createFeaturedProduct:', err);
+    res.status(500).json({ message: 'Failed to create featured product' });
+  }
+};
+
+// New arrival product (same as featured)
+export const createNewArrivalProduct = async (req: Request, res: Response) => {
+  const { title, description, price, link } = req.body;
+  const imageFile = req.file;
+
+  if (!title || !price || !link || !imageFile) {
+    return res.status(400).json({ message: 'Title, price, link, and image are required for new arrival' });
+  }
+
+  try {
+    const fileExt = imageFile.originalname.split('.').pop();
+    const fileName = `products/${uuidv4()}.${fileExt}`;
+    const command = new PutObjectCommand({
+      Bucket: process.env.BACKBLAZE_BUCKET!,
+      Key: fileName,
+      Body: imageFile.buffer,
+      ContentType: imageFile.mimetype,
+      ACL: 'public-read',
+    });
+    await s3Client.send(command);
+    const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        title,
+        description: description || null,
+        image_url: imageUrl,
+        price: parseFloat(price),
+        link,
+        category: 'new_arrival',
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ message: 'New arrival created', product: data });
+  } catch (err) {
+    logger.error('Error in createNewArrivalProduct:', err);
+    res.status(500).json({ message: 'Failed to create new arrival' });
   }
 };
 

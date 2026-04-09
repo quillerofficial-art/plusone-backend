@@ -57,12 +57,12 @@ export const createProduct = async (req: Request, res: Response) => {
     const { data, error } = await supabase
       .from('products')
       .insert({
-        title,
-        description,
+        title: title || null,
+        description: description || null,
         image_url: imageUrl,
         price: price ? parseFloat(price) : null,
-        link,
-        category,
+        link: link || null,
+        category: category || null,
         is_active: true,
       })
       .select()

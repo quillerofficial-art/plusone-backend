@@ -1,9 +1,11 @@
 import express from 'express';
 import {
   getProductsByCategory,
-  createProduct,
+  createBannerProduct,
+  createFeaturedProduct,
+  createNewArrivalProduct,
   updateProduct,
-  deleteProduct,
+  deleteProduct
 } from '../controllers/product.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { adminMiddleware } from '../middlewares/admin.middleware';
@@ -15,7 +17,9 @@ const router = express.Router();
 router.get('/category/:category', authMiddleware, getProductsByCategory);
 
 // Admin routes
-router.post('/', authMiddleware, adminMiddleware, uploadProductImage, createProduct);
+router.post('/banner', authMiddleware, adminMiddleware, uploadProductImage, createBannerProduct);
+router.post('/featured', authMiddleware, adminMiddleware, uploadProductImage, createFeaturedProduct);
+router.post('/new-arrival', authMiddleware, adminMiddleware, uploadProductImage, createNewArrivalProduct);
 router.put('/:id', authMiddleware, adminMiddleware, uploadProductImage, updateProduct);
 router.delete('/:id', authMiddleware, adminMiddleware, deleteProduct);
 

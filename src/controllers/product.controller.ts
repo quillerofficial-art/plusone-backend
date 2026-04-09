@@ -5,6 +5,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import { ProductCategory } from '../types/enums'
 import logger from '../utils/logger'
+import { uploadToBackblaze } from '../utils/s3Upload';
 
 // Get products by category (public)
 export const getProductsByCategory = async (req: Request, res: Response) => {
@@ -41,18 +42,7 @@ export const createBannerProduct = async (req: Request, res: Response) => {
   }
 
   try {
-    const fileExt = imageFile.originalname.split('.').pop();
-    const fileName = `products/${uuidv4()}.${fileExt}`;
-    const command = new PutObjectCommand({
-      Bucket: process.env.BACKBLAZE_BUCKET!,
-      Key: fileName,
-      Body: imageFile.buffer,
-      ContentType: imageFile.mimetype,
-      ACL: 'public-read',
-    });
-    await s3Client.send(command);
-    const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
-    
+    const imageUrl = await uploadToBackblaze(imageFile, 'products');
     const { data, error } = await supabase
       .from('products')
       .insert({
@@ -85,18 +75,7 @@ export const createFeaturedProduct = async (req: Request, res: Response) => {
   }
 
   try {
-    const fileExt = imageFile.originalname.split('.').pop();
-    const fileName = `products/${uuidv4()}.${fileExt}`;
-    const command = new PutObjectCommand({
-      Bucket: process.env.BACKBLAZE_BUCKET!,
-      Key: fileName,
-      Body: imageFile.buffer,
-      ContentType: imageFile.mimetype,
-      ACL: 'public-read',
-    });
-    await s3Client.send(command);
-    const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
-    
+    const imageUrl = await uploadToBackblaze(imageFile, 'products');
     const { data, error } = await supabase
       .from('products')
       .insert({
@@ -129,17 +108,7 @@ export const createNewArrivalProduct = async (req: Request, res: Response) => {
   }
 
   try {
-    const fileExt = imageFile.originalname.split('.').pop();
-    const fileName = `products/${uuidv4()}.${fileExt}`;
-    const command = new PutObjectCommand({
-      Bucket: process.env.BACKBLAZE_BUCKET!,
-      Key: fileName,
-      Body: imageFile.buffer,
-      ContentType: imageFile.mimetype,
-      ACL: 'public-read',
-    });
-    await s3Client.send(command);
-    const imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
+    const imageUrl = await uploadToBackblaze(imageFile, 'products');
     const { data, error } = await supabase
       .from('products')
       .insert({

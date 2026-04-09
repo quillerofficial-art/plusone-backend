@@ -7,7 +7,7 @@ import {
 } from '../controllers/product.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { adminMiddleware } from '../middlewares/admin.middleware';
-import { uploadSingle } from '../middlewares/upload.middleware';
+import { uploadProductImage } from '../middlewares/upload.middleware';
 
 const router = express.Router();
 
@@ -15,8 +15,8 @@ const router = express.Router();
 router.get('/category/:category', authMiddleware, getProductsByCategory);
 
 // Admin routes
-router.post('/', authMiddleware, adminMiddleware, uploadSingle, createProduct);
-router.put('/:id', authMiddleware, adminMiddleware, uploadSingle, updateProduct);
+router.post('/', authMiddleware, adminMiddleware, uploadProductImage, createProduct);
+router.put('/:id', authMiddleware, adminMiddleware, uploadProductImage, updateProduct);
 router.delete('/:id', authMiddleware, adminMiddleware, deleteProduct);
 
 export default router;

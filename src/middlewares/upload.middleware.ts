@@ -42,3 +42,4 @@ const upload = multer({
 })
 
 export const uploadSingle = upload.single('profilePic')
+export const uploadProductImage = upload.single('image')

@@ -7,17 +7,18 @@ const storage = multer.memoryStorage()
 const allowedMimeTypes = [
   'image/jpeg',
   'image/png',
-  'image/gif',
   'image/webp',
-  'image/jpg'
+  'image/jpg',
+  'image/heic',
+  'image/heif',
 ]
 
-const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif']
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Check MIME type
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    return cb(new Error('Invalid file type. Only JPEG, PNG, GIF, WEBP are allowed.'))
+    return cb(new Error('Invalid file type. Only JPEG, PNG, WEBP are allowed.'))
   }
   
   // Check file extension

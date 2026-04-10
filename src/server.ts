@@ -26,6 +26,7 @@ import paymentRoutes from './routes/payment.routes'
 import postRoutes from './routes/post.routes'
 import planRoutes from './routes/plan.routes'
 import productRoutes from './routes/product.routes'
+import inviteRoutes from './routes/invite.routes'
 
 validateEnv()
 
@@ -63,6 +64,7 @@ app.use('/api/payment', paymentRoutes)
 app.use('/api/posts', postRoutes)
 app.use('/api/plans', planRoutes)
 app.use('/api/products', productRoutes)
+app.use('/api/invite', inviteRoutes)
 
 // Error handling middleware (should be last)
 app.use(errorHandler)

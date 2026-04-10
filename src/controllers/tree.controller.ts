@@ -54,8 +54,16 @@ export const generateInvite = async (req: Request, res: Response) => {
       return errorResponse(res, 'Failed to generate invite')
     }
 
-    const link = `${process.env.FRONTEND_URL}/signup?token=${token}`
-    successResponse(res, { link, token })
+    // Web invite page (for users without app)
+    const inviteWebUrl = `${process.env.BACKEND_URL}/invite?token=${token}`;
+    // Deep link (for users with app)
+    const deepLink = `${process.env.FRONTEND_URL}?token=${token}`;
+
+   successResponse(res, { 
+   invite_link: inviteWebUrl,
+   deep_link: deepLink,
+   token 
+   });
   } catch (err) {
     logger.error('Error in generateInvite:', { error: err, userId: req.user?.id })
     errorResponse(res, 'Server error')

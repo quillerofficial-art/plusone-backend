@@ -54,7 +54,7 @@ export const generateInvite = async (req: Request, res: Response) => {
       return errorResponse(res, 'Failed to generate invite')
     }
 
-    const link = `${process.env.BASE_URL}/signup?token=${token}`
+    const link = `${process.env.FRONTEND_URL}/signup?token=${token}`
     successResponse(res, { link, token })
   } catch (err) {
     logger.error('Error in generateInvite:', { error: err, userId: req.user?.id })

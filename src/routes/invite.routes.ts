@@ -145,32 +145,16 @@ router.get('/', (req, res) => {
                 }
             }
             
-            downloadBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Copy token to clipboard if present
-                if (token) {
-                    copyToClipboard(token);
-                    showToast('✓ Invitation token copied to clipboard!');
-                } else {
-                    showToast('⚠️ No token found, but you can still download the app.');
+            downloadBtn.addEventListener('click', function () {
+             if (token) {
+               copyToClipboard(token);
+                showToast('✓ Invitation token copied!');
                 }
-                
-                // Start APK download
-                const link = document.createElement('a');
-                link.href = apkUrl;
-                link.download = ''; // optional, forces download
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Also try direct window location as fallback
+
                 setTimeout(() => {
-                    if (!document.hidden) {
-                        window.location.href = apkUrl;
-                    }
-                }, 200);
-            });
+                      window.location.href = apkUrl;
+                 }, 300);
+             });
         })();
     </script>
 </body>

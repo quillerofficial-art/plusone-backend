@@ -65,7 +65,7 @@ app.use('/api/payment', paymentRoutes)
 app.use('/api/posts', postRoutes)
 app.use('/api/plans', planRoutes)
 app.use('/api/products', productRoutes)
-app.use('/api/invite', inviteRoutes)
+app.use('/invite', inviteRoutes)
 
 // Error handling middleware (should be last)
 app.use(errorHandler)

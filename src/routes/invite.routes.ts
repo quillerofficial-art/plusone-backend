@@ -87,7 +87,7 @@ p {
     <p>Download the app and continue</p>
 
     <!-- ✅ DIRECT DOWNLOAD LINK -->
-    <a href="#" id="downloadBtn" class="btn">📲 Download App</a>
+    <a href="${apkUrl}" class="btn" onclick="copyToken()">📲 Download App</a>
 
     <div class="note">Token auto copied. Paste inside app if needed.</div>
 </div>
@@ -97,17 +97,12 @@ p {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token') || '';
 
-    const apkUrl = '${apkUrl}';
-    const btn = document.getElementById('downloadBtn');
+    window.copyToken = function() {
+        if (!token) return;
 
-     btn.addEventListener('click', function(e) {
-     e.preventDefault();
-
-     // copy token
-     if (token) {
         try {
             navigator.clipboard.writeText(token);
-        } catch (err) {
+        } catch (e) {
             const textarea = document.createElement('textarea');
             textarea.value = token;
             document.body.appendChild(textarea);
@@ -115,13 +110,7 @@ p {
             document.execCommand('copy');
             document.body.removeChild(textarea);
         }
-     }
-
-     // delay + download
-     setTimeout(() => {
-        window.location.href = apkUrl;
-     }, 400);
-    });
+    }
 })();
 </script>
 

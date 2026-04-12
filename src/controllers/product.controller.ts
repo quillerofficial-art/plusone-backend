@@ -132,6 +132,7 @@ export const createNewArrivalProduct = async (req: Request, res: Response) => {
 };
 
 // Admin: Update product
+// Admin: Update product
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title, description, price, link, category, is_active } = req.body;
@@ -140,17 +141,8 @@ export const updateProduct = async (req: Request, res: Response) => {
   try {
     let imageUrl: string | undefined;
     if (imageFile) {
-      const fileExt = imageFile.originalname.split('.').pop();
-      const fileName = `products/${uuidv4()}.${fileExt}`;
-      const command = new PutObjectCommand({
-        Bucket: process.env.BACKBLAZE_BUCKET!,
-        Key: fileName,
-        Body: imageFile.buffer,
-        ContentType: imageFile.mimetype,
-        ACL: 'public-read',
-      });
-      await s3Client.send(command);
-      imageUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`;
+      // Use helper function instead of raw S3
+      imageUrl = await uploadToBackblaze(imageFile, 'products');
     }
 
     const updates: any = {};

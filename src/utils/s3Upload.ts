@@ -10,7 +10,7 @@ export const uploadToBackblaze = async (
   const fileName = `${folder}/${uuidv4()}.${fileExt}`
 
   const command = new PutObjectCommand({
-    Bucket: process.env.BACKBLAZE_BUCKET!,
+    Bucket: process.env.R2_BUCKET_NAME!,               // ← R2_BUCKET_NAME
     Key: fileName,
     Body: file.buffer,
     ContentType: file.mimetype,
@@ -18,5 +18,6 @@ export const uploadToBackblaze = async (
 
   await s3Client.send(command)
 
-  return `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`
+  // R2 public URL format
+  return `${process.env.R2_PUBLIC_URL}/${process.env.R2_BUCKET_NAME}/${fileName}`
 }

@@ -5,31 +5,19 @@ import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
 import { successResponse, errorResponse } from '../utils/response'
 import logger from '../utils/logger'
+import { uploadToBackblaze } from '../utils/s3Upload'
 
 export const createPost = async (req: Request, res: Response) => {
-  const { description, affiliateLink } = req.body
+  const { description, affiliateLink } = req.body;
   const bannerFile = req.file || (req.files && !Array.isArray(req.files) && 'image' in req.files ? req.files['image'][0] : null);
-  
 
   if (!description || !affiliateLink || !bannerFile) {
-    return errorResponse(res, 'Missing required fields or banner file')
+    return errorResponse(res, 'Missing required fields or banner file');
   }
 
   try {
-    const fileExt = bannerFile.originalname.split('.').pop()
-    const fileName = `posts/${uuidv4()}.${fileExt}`
-
-    const command = new PutObjectCommand({
-      Bucket: process.env.BACKBLAZE_BUCKET!,
-      Key: fileName,
-      Body: bannerFile.buffer,
-      ContentType: bannerFile.mimetype,
-      ACL: 'public-read',
-    })
-
-    await s3Client.send(command)
-
-    const bannerUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`
+    // Use helper instead of raw S3
+    const bannerUrl = await uploadToBackblaze(bannerFile, 'posts');
 
     const { data, error } = await supabase
       .from('admin_posts')
@@ -40,61 +28,50 @@ export const createPost = async (req: Request, res: Response) => {
         created_by: req.user!.id,
       })
       .select()
-      .single()
+      .single();
 
-    if (error) throw error
+    if (error) throw error;
 
-    successResponse(res, { message: 'Post created', post: data })
+    successResponse(res, { message: 'Post created', post: data });
   } catch (err) {
-    logger.error('Error in createPost:', { error: err, userId: req.user?.id })
-    errorResponse(res, 'Failed to create post')
+    logger.error('Error in createPost:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Failed to create post');
   }
-}
+};
 
 export const updatePost = async (req: Request, res: Response) => {
-  const { id } = req.params
-  const { description, affiliateLink } = req.body
-  const bannerFile = req.file
+  const { id } = req.params;
+  const { description, affiliateLink } = req.body;
+  const bannerFile = req.file;
 
   try {
-    let bannerUrl: string | undefined
+    let bannerUrl: string | undefined;
 
     if (bannerFile) {
-      const fileExt = bannerFile.originalname.split('.').pop()
-      const fileName = `posts/${uuidv4()}.${fileExt}`
-
-      const command = new PutObjectCommand({
-        Bucket: process.env.BACKBLAZE_BUCKET!,
-        Key: fileName,
-        Body: bannerFile.buffer,
-        ContentType: bannerFile.mimetype,
-        ACL: 'public-read',
-      })
-
-      await s3Client.send(command)
-      bannerUrl = `${process.env.BACKBLAZE_ENDPOINT}/${process.env.BACKBLAZE_BUCKET}/${fileName}`
+      // Use helper
+      bannerUrl = await uploadToBackblaze(bannerFile, 'posts');
     }
 
-    const updates: any = {}
-    if (description) updates.description = description
-    if (affiliateLink) updates.affiliate_link = affiliateLink
-    if (bannerUrl) updates.banner_url = bannerUrl
+    const updates: any = {};
+    if (description) updates.description = description;
+    if (affiliateLink) updates.affiliate_link = affiliateLink;
+    if (bannerUrl) updates.banner_url = bannerUrl;
 
     const { data, error } = await supabase
       .from('admin_posts')
       .update(updates)
       .eq('id', id)
       .select()
-      .single()
+      .single();
 
-    if (error) throw error
+    if (error) throw error;
 
-    successResponse(res, { message: 'Post updated', post: data })
+    successResponse(res, { message: 'Post updated', post: data });
   } catch (err) {
-    logger.error('Error in updatePost:', { error: err, userId: req.user?.id })
-    errorResponse(res, 'Failed to update post')
+    logger.error('Error in updatePost:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Failed to update post');
   }
-}
+};
 
 export const deletePost = async (req: Request, res: Response) => {
   const { id } = req.params

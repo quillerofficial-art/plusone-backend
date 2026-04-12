@@ -19,5 +19,5 @@ export const uploadToBackblaze = async (
   await s3Client.send(command)
 
   // R2 public URL format
-  return `${process.env.R2_PUBLIC_URL}/${process.env.R2_BUCKET_NAME}/${fileName}`
+  return `${process.env.R2_PUBLIC_URL}/${fileName}`;
 }

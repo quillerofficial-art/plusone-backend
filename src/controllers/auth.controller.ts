@@ -355,3 +355,29 @@ export const resetPassword = async (req: Request, res: Response) => {
     errorResponse(res, 'Server error');
   }
 };
+
+// refresh token endpoint to get new access token using refresh token
+export const refreshToken = async (req: Request, res: Response) => {
+  const { refresh_token } = req.body;
+  if (!refresh_token) {
+    return res.status(400).json({ message: 'Refresh token required' });
+  }
+
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+    if (error) throw error;
+    
+    // ✅ Check if session exists
+    if (!data.session) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    res.json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+  } catch (err: any) {
+    console.error('Refresh token error:', err);
+    res.status(401).json({ message: err.message || 'Invalid or expired refresh token' });
+  }
+};

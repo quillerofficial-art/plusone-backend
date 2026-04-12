@@ -29,13 +29,17 @@ export const sendOtpSchema = z.object({
 export const validate = (schema: any) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.body)
-      next()
+      schema.parse(req.body);
+      next();
     } catch (error: any) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors.map((e: any) => e.message) 
-      })
+      // Zod error format
+      const errors = error.errors?.map((e: any) => e.message) || 
+                     error.issues?.map((e: any) => e.message) || 
+                     [error.message || 'Validation error'];
+      return res.status(400).json({
+        message: 'Validation error',
+        errors,
+      });
     }
-  }
-}
+  };
+};

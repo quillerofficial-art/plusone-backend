@@ -12,7 +12,14 @@ export const verifyOtp = async (req: Request, res: Response) => {
   const { email, otp, purpose } = req.body;
   const isValid = await verifyOTP(email, otp, purpose);
   if (!isValid) return errorResponse(res, 'Invalid or expired OTP');
-  successResponse(res, { valid: true });
+
+  // Mark email as verified for 15 minutes
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await supabase
+    .from('email_verifications')
+    .upsert({ email, verified: true, expires_at: expiresAt.toISOString() });
+
+  successResponse(res, { verified: true });
 };
 
 // Signup with invitation token
@@ -66,10 +73,15 @@ export const signup = async (req: Request, res: Response) => {
       return errorResponse(res, 'Position already occupied')
     }
     
-    // 3. Verify OTP for signup
-    const isValid = await verifyOTP(email, req.body.otp, OtpPurpose.SIGNUP);
-     if (!isValid) {
-     return errorResponse(res, 'Invalid or expired OTP');
+    // 2.5 Check if email is verified
+    const { data: verif, error: verifError } = await supabase
+     .from('email_verifications')
+     .select('verified, expires_at')
+     .eq('email', email)
+     .single();
+
+     if (verifError || !verif || !verif.verified || new Date(verif.expires_at) < new Date()) {
+     return errorResponse(res, 'Email not verified. Please request OTP and verify first.');
     }
 
     // 3. Create user in Supabase Auth (using admin client to auto-confirm email)
@@ -82,9 +94,9 @@ export const signup = async (req: Request, res: Response) => {
     if (authError) {
       return errorResponse(res, authError.message )
     }
-
+    
     userId = authUser.user.id
-
+    
     // 4. Insert into public.users
     const referralCode = generateReferralCode()
     const { error: dbError } = await supabase
@@ -122,6 +134,7 @@ export const signup = async (req: Request, res: Response) => {
       .eq('id', invToken.id)
 
     successResponse(res, { message: 'User created successfully', userId })
+    await supabase.from('email_verifications').delete().eq('email', email);
   } catch (err) {
      if (userId) {
       await supabaseAdmin.auth.admin.deleteUser(userId)

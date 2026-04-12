@@ -59,6 +59,33 @@ p {
     margin-bottom: 25px;
 }
 
+/* TOKEN BOX */
+.token-box {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+}
+
+#tokenText {
+    font-size: 14px;
+    margin-bottom: 10px;
+    word-break: break-all;
+    color: #e2e8f0;
+}
+
+.copy-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 30px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* DOWNLOAD BUTTON */
 .btn {
     display: block;
     width: 100%;
@@ -69,6 +96,7 @@ p {
     text-decoration: none;
     background: #22c55e;
     color: white;
+    margin-top: 10px;
 }
 
 .note {
@@ -86,10 +114,16 @@ p {
     <h1>You're Invited</h1>
     <p>Download the app and continue</p>
 
-    <!-- ✅ DIRECT DOWNLOAD LINK -->
-    <a href="${apkUrl}" class="btn" onclick="copyToken()">📲 Download App</a>
+    <!-- TOKEN DISPLAY + COPY -->
+    <div class="token-box">
+        <div id="tokenText"></div>
+        <button class="copy-btn" onclick="copyToken()">📋 Copy Referral Code</button>
+    </div>
 
-    <div class="note">Token auto copied. Paste inside app if needed.</div>
+    <!-- DOWNLOAD BUTTON -->
+    <a href="${apkUrl}" class="btn" onclick="handleDownload()">📲 Download App</a>
+
+    <div class="note">Token auto copied on download. Paste inside app if needed.</div>
 </div>
 
 <script>
@@ -97,6 +131,16 @@ p {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token') || '';
 
+    const tokenText = document.getElementById('tokenText');
+
+    // Show token
+    if (token) {
+        tokenText.innerText = "Referral Code: " + token;
+    } else {
+        tokenText.innerText = "No referral code found";
+    }
+
+    // Copy function
     window.copyToken = function() {
         if (!token) return;
 
@@ -111,6 +155,14 @@ p {
             document.body.removeChild(textarea);
         }
     }
+
+    // Download click handler
+    window.handleDownload = function() {
+        // Copy first
+        window.copyToken();
+        // Download will happen automatically via href
+    }
+
 })();
 </script>
 

@@ -133,6 +133,19 @@ export const signup = async (req: Request, res: Response) => {
       .update({ used: true })
       .eq('id', invToken.id)
 
+    // ✅ Ensure child's parent_id is correct (permanent fix)
+    const { data: childCheck } = await supabase
+     .from('users')
+     .select('parent_id')
+     .eq('id', userId)
+     .single();
+
+    if (childCheck?.parent_id !== invToken.parent_id) {
+     await supabase
+     .from('users')
+     .update({ parent_id: invToken.parent_id })
+     .eq('id', userId);
+    }
     successResponse(res, { message: 'User created successfully', userId })
     await supabase.from('email_verifications').delete().eq('email', email);
   } catch (err) {

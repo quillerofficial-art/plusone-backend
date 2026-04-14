@@ -123,6 +123,23 @@ export const getChildren = async (req: Request, res: Response) => {
     const children = []
 
     for (const id of childIds) {
+  console.log("FETCHING CHILD ID:", id)
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+   console.log("CHILD DATA:", data)
+   console.log("CHILD ERROR:", error)
+
+   if (data) {
+    children.push(data)
+   }
+  }
+
+    for (const id of childIds) {
       const { data, error } = await supabase
         .from('users')
         .select(`

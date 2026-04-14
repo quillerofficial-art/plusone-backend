@@ -93,39 +93,52 @@ export const getRoot = async (req: Request, res: Response) => {
 // Get children of a node
 export const getChildren = async (req: Request, res: Response) => {
   const { nodeId } = req.params
-
-  // Ensure nodeId is a string (Express params can be string | string[])
   const nodeIdStr = Array.isArray(nodeId) ? nodeId[0] : nodeId
 
   try {
-    // Check if node is in user's tree
-    const isInTree = await isDescendant(req.user!.id, nodeIdStr)
-    if (!isInTree) {
-      return errorResponse(res, 'Access denied')
+    // ✅ Step 1: check node exists
+    const { data: node, error: nodeError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', nodeIdStr)
+      .single()
+
+    if (nodeError || !node) {
+      return errorResponse(res, 'Node not found')
     }
 
+    // ✅ Step 2: fetch children (NULL-safe delete filter)
     const { data: children, error } = await supabase
       .from('users')
-      .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id, position')
+      .select(`
+        id,
+        name,
+        email,
+        mobile_number,
+        profile_pic_url,
+        subscription_status,
+        left_child_id,
+        right_child_id,
+        position
+      `)
       .eq('parent_id', nodeIdStr)
-      .eq('is_deleted', false)
+      .or('is_deleted.eq.false,is_deleted.is.null')
 
     if (error) {
       return errorResponse(res, 'Server error')
     }
 
-     const transformedChildren = children.map(child => ({
+    // ✅ Step 3: transform
+    const transformedChildren = (children || []).map(child => ({
       ...child,
-      side: child.position,   // 'left' or 'right'
-      position: undefined,    // optional: remove original position field if not needed
-    }));
+      side: child.position,
+      position: undefined,
+    }))
 
-    
-    successResponse(res, transformedChildren)
+    return successResponse(res, transformedChildren)
+
   } catch (err) {
     logger.error('Error in getChildren:', { error: err, userId: req.user?.id })
-    errorResponse(res, 'Server error')
+    return errorResponse(res, 'Server error')
   }
 }
-
-

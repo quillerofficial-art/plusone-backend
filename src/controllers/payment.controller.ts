@@ -61,7 +61,7 @@ export const createSubscription = async (req: Request, res: Response) => {
       .insert({
         user_id: req.user!.id,
         razorpay_order_id: order.id,
-        amount: Number (order.amount) / 100,
+        amount: order.amount,
         status: 'created',
         subscription_start: null, // will set on verification
         subscription_end: null,
@@ -182,4 +182,84 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
   
   if (error) return res.status(404).json({ message: 'Order not found' });
   res.json({ status: data.status, paymentId: data.razorpay_payment_id });
+};
+
+export const handleWebhook = async (req: Request, res: Response) => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET!;
+
+    const signature = req.headers['x-razorpay-signature'] as string;
+
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(req.body)
+      .digest('hex');
+
+    if (expectedSignature !== signature) {
+      return res.status(400).json({ message: 'Invalid signature' });
+    }
+
+    const body = JSON.parse(req.body.toString());
+
+    if (body.event === 'payment.captured') {
+      const payment = body.payload.payment.entity;
+      const orderId = payment.order_id;
+
+      console.log('Webhook received for order:', orderId);
+
+      await activateSubscription(orderId);
+    }
+
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('Webhook error:', err);
+    res.status(500).json({ message: 'Webhook failed' });
+  }
+};
+
+const activateSubscription = async (orderId: string) => {
+  // 1. transaction fetch
+  const { data: transaction } = await supabase
+    .from('payment_transactions')
+    .select('*')
+    .eq('razorpay_order_id', orderId)
+    .single();
+
+  if (!transaction || transaction.status === 'paid') return;
+
+  // 2. mark paid
+  await supabase
+    .from('payment_transactions')
+    .update({ status: 'paid' })
+    .eq('razorpay_order_id', orderId);
+
+  // 3. get plan duration
+  const { data: plan } = await supabase
+    .from('subscription_plans')
+    .select('duration_months')
+    .eq('id', transaction.plan_id)
+    .single();
+
+  const startDate = new Date();
+  const endDate = new Date();
+
+  endDate.setMonth(endDate.getMonth() + (plan?.duration_months || 1));
+
+  // 4. update user (🔥 MOST IMPORTANT)
+  await supabase
+    .from('users')
+    .update({
+      subscription_status: true,
+      subscription_expiry: endDate.toISOString(),
+    })
+    .eq('id', transaction.user_id);
+
+  // 5. save subscription dates
+  await supabase
+    .from('payment_transactions')
+    .update({
+      subscription_start: startDate.toISOString(),
+      subscription_end: endDate.toISOString(),
+    })
+    .eq('razorpay_order_id', orderId);
 };

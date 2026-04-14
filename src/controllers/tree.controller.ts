@@ -96,49 +96,40 @@ export const getChildren = async (req: Request, res: Response) => {
   const nodeIdStr = Array.isArray(nodeId) ? nodeId[0] : nodeId
 
   try {
-    // ✅ Step 1: check node exists
-    const { data: node, error: nodeError } = await supabase
+    // 1. get parent
+    const { data: parent, error: parentError } = await supabase
       .from('users')
-      .select('id')
+      .select('left_child_id, right_child_id')
       .eq('id', nodeIdStr)
       .single()
 
-    if (nodeError || !node) {
+    if (parentError || !parent) {
       return errorResponse(res, 'Node not found')
     }
 
-    // ✅ Step 2: fetch children (NULL-safe delete filter)
+    // 2. collect children IDs
+    const childIds = [
+      parent.left_child_id,
+      parent.right_child_id
+    ].filter(Boolean)
+
+    if (childIds.length === 0) {
+      return successResponse(res, [])
+    }
+
+    // 3. fetch children
     const { data: children, error } = await supabase
       .from('users')
-      .select(`
-        id,
-        name,
-        email,
-        mobile_number,
-        profile_pic_url,
-        subscription_status,
-        left_child_id,
-        right_child_id,
-        position
-      `)
-      .eq('parent_id', nodeIdStr)
-      .or('is_deleted.eq.false,is_deleted.is.null')
+      .select('*')
+      .in('id', childIds)
 
     if (error) {
       return errorResponse(res, 'Server error')
     }
 
-    // ✅ Step 3: transform
-    const transformedChildren = (children || []).map(child => ({
-      ...child,
-      side: child.position,
-      position: undefined,
-    }))
-
-    return successResponse(res, transformedChildren)
+    return successResponse(res, children)
 
   } catch (err) {
-    logger.error('Error in getChildren:', { error: err, userId: req.user?.id })
     return errorResponse(res, 'Server error')
   }
 }

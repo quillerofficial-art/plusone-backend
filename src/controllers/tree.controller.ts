@@ -122,6 +122,8 @@ export const getChildren = async (req: Request, res: Response) => {
       .from('users')
       .select('*')
       .in('id', childIds)
+     
+     console.log("CHILD IDS:", childIds)
 
     if (error) {
       return errorResponse(res, 'Server error')

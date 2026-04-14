@@ -96,10 +96,9 @@ export const getChildren = async (req: Request, res: Response) => {
   const nodeIdStr = Array.isArray(nodeId) ? nodeId[0] : nodeId
 
   try {
-    // 1. Validate node exists
     const { data: parent, error: parentError } = await supabase
       .from('users')
-      .select('id, left_child_id, right_child_id')
+      .select('left_child_id, right_child_id')
       .eq('id', nodeIdStr)
       .single()
 
@@ -107,78 +106,39 @@ export const getChildren = async (req: Request, res: Response) => {
       return errorResponse(res, 'Node not found')
     }
 
-    // 2. Extract child IDs
     const childIds = [
       parent.left_child_id,
       parent.right_child_id
     ].filter(Boolean)
 
-    console.log("CHILD IDS:", childIds)
-
     if (childIds.length === 0) {
       return successResponse(res, [])
     }
 
-    // 3. Fetch children safely (no .in bug)
-    const children = []
+    const { data: children, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        name,
+        email,
+        mobile_number,
+        profile_pic_url,
+        subscription_status,
+        left_child_id,
+        right_child_id,
+        position
+      `)
+      .in('id', childIds)
 
-    for (const id of childIds) {
-  console.log("FETCHING CHILD ID:", id)
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-   console.log("CHILD DATA:", data)
-   console.log("CHILD ERROR:", error)
-
-   if (data) {
-    children.push(data)
-   }
-  }
-
-    for (const id of childIds) {
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          id,
-          name,
-          email,
-          mobile_number,
-          profile_pic_url,
-          subscription_status,
-          left_child_id,
-          right_child_id,
-          position,
-          is_deleted
-        `)
-        .eq('id', id)
-        .single()
-
-      // Skip deleted users (safe check)
-      if (data && (data.is_deleted === false || data.is_deleted === null)) {
-        children.push({
-          ...data,
-          side: data.position,
-          position: undefined
-        })
-      }
-
-      if (error) {
-        console.error("Child fetch error:", error)
-      }
+    if (error) {
+      logger.error('GetChildren error:', error)
+      return errorResponse(res, 'Server error')
     }
 
     return successResponse(res, children)
 
   } catch (err) {
-    logger.error('Error in getChildren:', {
-      error: err,
-      userId: req.user?.id,
-      nodeId: nodeIdStr
-    })
+    logger.error('Error in getChildren:', err)
     return errorResponse(res, 'Server error')
   }
 }

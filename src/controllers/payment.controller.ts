@@ -47,7 +47,7 @@ export const createSubscription = async (req: Request, res: Response) => {
 
     const shortUserId = req.user!.id.replace(/-/g, '').substring(0, 10);
     const options = {
-     amount: plan.amount * 100, // convert to paise
+     amount: plan.amount, // convert to paise
      currency: 'INR',
      receipt: `rcpt_${shortUserId}_${Date.now()}`,
      payment_capture: 1,

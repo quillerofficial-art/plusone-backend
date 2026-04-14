@@ -47,7 +47,7 @@ export const createSubscription = async (req: Request, res: Response) => {
 
     const shortUserId = req.user!.id.replace(/-/g, '').substring(0, 10);
     const options = {
-     amount: plan.amount, // convert to paise
+     amount: plan.amount * 100, // convert to paise
      currency: 'INR',
      receipt: `rcpt_${shortUserId}_${Date.now()}`,
      payment_capture: 1,
@@ -73,7 +73,7 @@ export const createSubscription = async (req: Request, res: Response) => {
     res.json({
       razorpay_key: process.env.RAZORPAY_KEY_ID,
       order_id: order.id,
-      amount: order.amount,
+      amount: Number(order.amount) * 100,
       currency: order.currency,
     });
   } catch (err) {

@@ -127,6 +127,7 @@ export const getChildren = async (req: Request, res: Response) => {
         left_child_id,
         right_child_id,
         position
+        level
       `)
       .in('id', childIds)
 

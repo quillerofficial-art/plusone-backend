@@ -3,6 +3,7 @@ if (!fs.existsSync('logs')) {
   fs.mkdirSync('logs');
 }
 import express from 'express'
+import { handleWebhook } from './controllers/payment.controller';
 import dotenv from 'dotenv'
 import './types'
 import { validateEnv } from './config/validateEnv'
@@ -32,6 +33,7 @@ import inviteRoutes from './routes/invite.routes'
 validateEnv()
 
 const app = express()
+
 app.use(helmet())
 app.use(apiRateLimiter);
 app.set('trust proxy', 1) // Trust first proxy (Render)
@@ -44,7 +46,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-
+app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

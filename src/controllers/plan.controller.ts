@@ -9,6 +9,7 @@ export const getPlans = async (req: Request, res: Response) => {
     const { data, error } = await supabase
       .from('subscription_plans')
       .select('*')
+      .eq('is_deleted', false) 
       .order('amount', { ascending: true })
 
     if (error) throw error
@@ -59,7 +60,7 @@ export const deletePlan = async (req: Request, res: Response) => {
   try {
     const { error } = await supabase
       .from('subscription_plans')
-      .delete()
+      .update({ is_deleted: true })
       .eq('id', id)
     if (error) throw error
     res.json({ message: 'Plan deleted' })

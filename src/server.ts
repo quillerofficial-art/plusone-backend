@@ -12,6 +12,8 @@ import { apiRateLimiter } from './middlewares/rateLimit.middleware';
 import { requestIdMiddleware } from './middlewares/requestId.middleware'
 import { errorHandler } from './middlewares/error.middleware'
 import { verifyPayment } from './controllers/payment.controller'
+import cron from 'node-cron';
+import { supabase } from './config/supabase';
 
 dotenv.config()
 
@@ -69,6 +71,25 @@ app.use('/invite', inviteRoutes)
 
 // Error handling middleware (should be last)
 app.use(errorHandler)
+
+// Har raat 2:00 baje purane orders delete karo
+cron.schedule('0 2 * * *', async () => {
+  console.log('Deleting old payment transactions...');
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const { error } = await supabase
+    .from('payment_transactions')
+    .delete()
+    .in('status', ['created', 'expired', 'failed'])
+    .lt('created_at', thirtyDaysAgo.toISOString());
+    
+  if (error) {
+    console.error('Cleanup failed:', error);
+  } else {
+    console.log('Old orders cleaned up');
+  }
+});
 
 // Start server
 app.listen(PORT, () => {

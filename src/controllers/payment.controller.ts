@@ -11,23 +11,6 @@ const razorpay = new Razorpay({
 
 // Create subscription order with plan
 export const createSubscription = async (req: Request, res: Response) => {
-    const { data: existingOrder } = await supabase
-      .from('payment_transactions')
-      .select('razorpay_order_id')
-      .eq('user_id', req.user!.id)
-      .eq('status', 'created')
-      .single()
-
-     if (existingOrder) {
-    const order = await razorpay.orders.fetch(existingOrder.razorpay_order_id);
-    return res.json({
-      razorpay_key: process.env.RAZORPAY_KEY_ID,
-      order_id: order.id,
-      amount: order.amount,
-      currency: order.currency,
-    });
-  }
-    
   const { planId } = req.body
   if (!planId) {
     return res.status(400).json({ message: 'Plan ID required' })
@@ -73,7 +56,7 @@ export const createSubscription = async (req: Request, res: Response) => {
     res.json({
       razorpay_key: process.env.RAZORPAY_KEY_ID,
       order_id: order.id,
-      amount: Number(order.amount) * 100,
+      amount: order.amount,
       currency: order.currency,
     });
   } catch (err) {

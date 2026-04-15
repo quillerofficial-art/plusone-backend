@@ -159,7 +159,7 @@ p {
     <a href="${apkUrl}" class="btn">📲 Download App</a>
     <div class="note">After installing, open the app and paste this code during signup.</div>
 </div>
-
+console.log("SCRIPT RUNNING");
 <script>
 (function() {
     const copyBtn = document.getElementById('copyBtn');

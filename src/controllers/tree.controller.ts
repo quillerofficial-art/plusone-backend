@@ -124,10 +124,10 @@ export const getChildren = async (req: Request, res: Response) => {
         mobile_number,
         profile_pic_url,
         subscription_status,
+        level,
         left_child_id,
         right_child_id,
         position
-        level
       `)
       .in('id', childIds)
 

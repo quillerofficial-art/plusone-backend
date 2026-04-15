@@ -11,7 +11,6 @@ import cors from 'cors'
 import { apiRateLimiter } from './middlewares/rateLimit.middleware';
 import { requestIdMiddleware } from './middlewares/requestId.middleware'
 import { errorHandler } from './middlewares/error.middleware'
-import { verifyPayment } from './controllers/payment.controller'
 import cron from 'node-cron';
 import { supabase } from './config/supabase';
 
@@ -46,11 +45,6 @@ app.use(cors({
 }));
 
 
-app.post(
-  '/razorpay-webhook',
-  express.raw({ type: 'application/json' }),
-  verifyPayment
-)
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

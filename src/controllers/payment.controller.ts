@@ -170,26 +170,25 @@ export const getPaymentStatus = async (req: Request, res: Response) => {
 export const handleWebhook = async (req: Request, res: Response) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET!;
-
     const signature = req.headers['x-razorpay-signature'] as string;
+    const rawBody = req.body; // raw string/buffer
 
+    // ✅ Signature verify on raw body
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(req.body)
+      .update(rawBody)
       .digest('hex');
 
     if (expectedSignature !== signature) {
       return res.status(400).json({ message: 'Invalid signature' });
     }
 
-    const body = JSON.parse(req.body.toString());
+    // ✅ Parse raw body after verification
+    const payload = JSON.parse(rawBody.toString());
 
-    if (body.event === 'payment.captured') {
-      const payment = body.payload.payment.entity;
-      const orderId = payment.order_id;
-
+    if (payload.event === 'payment.captured') {
+      const orderId = payload.payload.payment.entity.order_id;
       console.log('Webhook received for order:', orderId);
-
       await activateSubscription(orderId);
     }
 

@@ -165,116 +165,63 @@ p {
     const copyBtn = document.getElementById('copyBtn');
     const tokenInput = document.getElementById('tokenInput');
 
-    function getToken() {
-        return tokenInput.value.trim();
+    function selectText() {
+        tokenInput.removeAttribute('readonly');
+        tokenInput.focus();
+        tokenInput.select();
+        tokenInput.setSelectionRange(0, 99999);
+        tokenInput.setAttribute('readonly', true);
     }
 
-    if (!getToken()) {
-        copyBtn.disabled = true;
-        copyBtn.style.opacity = '0.5';
-    }
-
-    async function copyToClipboard() {
-        const text = getToken();
-
-        if (!text) {
-            alert('No referral code to copy.');
-            return;
-        }
-
-        // METHOD 1
-        try {
-            await navigator.clipboard.writeText(text);
-            showCopied();
-            return;
-        } catch (err) {}
-
-        // METHOD 2 (fallback)
-        try {
-            tokenInput.removeAttribute('readonly');
-            tokenInput.focus();
-            tokenInput.select();
-            tokenInput.setSelectionRange(0, 99999);
-
-            const success = document.execCommand('copy');
-
-            tokenInput.setAttribute('readonly', true);
-
-            if (success) {
-                showCopied();
-            } else {
-                throw new Error();
-            }
-        } catch (err) {
-            alert('Press and hold to copy manually.');
-        }
-    }
-
-    function showCopied() {
-        const originalText = copyBtn.innerText;
-
-        copyBtn.innerText = '✓ Copied!';
-        copyBtn.classList.add('copied');
-
-        // vibration
-        if (navigator.vibrate) navigator.vibrate(100);
-
-        // highlight
-        tokenInput.style.borderColor = '#22c55e';
-
-        // toast
-        showToast('Referral code copied!');
-
-        setTimeout(() => {
-            copyBtn.innerText = originalText;
-            copyBtn.classList.remove('copied');
-            tokenInput.style.borderColor = '#3b82f6';
-        }, 2000);
-    }
-
-    function showToast(message) {
+    function showToast(msg) {
         const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerText = message;
+        toast.innerText = msg;
+
+        toast.style.position = 'fixed';
+        toast.style.bottom = '30px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = '#22c55e';
+        toast.style.color = '#fff';
+        toast.style.padding = '12px 20px';
+        toast.style.borderRadius = '30px';
+        toast.style.zIndex = '9999';
 
         document.body.appendChild(toast);
 
-        setTimeout(() => {
-            toast.remove();
-        }, 2000);
+        setTimeout(() => toast.remove(), 2000);
     }
 
     copyBtn.addEventListener('click', function(e) {
-    e.preventDefault();
+        e.preventDefault();
 
-    const text = tokenInput.value;
+        const text = tokenInput.value.trim();
 
-    if (!text) {
-        alert('No referral code');
-        return;
-    }
+        if (!text) {
+            alert('No referral code');
+            return;
+        }
 
-    // Select text forcefully
-    tokenInput.removeAttribute('readonly');
-    tokenInput.focus();
-    tokenInput.select();
-    tokenInput.setSelectionRange(0, 99999);
+        // 🔥 FORCE SELECT
+        selectText();
 
-    // Try copy (may fail silently)
-    let copied = false;
-    try {
-        copied = document.execCommand('copy');
-    } catch (e) {}
+        // 🔥 TRY COPY (optional, ignore result)
+        try {
+            document.execCommand('copy');
+        } catch (e) {}
 
-    tokenInput.setAttribute('readonly', true);
+        // 🔥 ALWAYS SHOW INSTRUCTION
+        showToast('Code selected — press & hold to copy');
 
-    // ✅ ALWAYS give feedback
-    if (copied) {
-        showToast('Copied!');
-    } else {
-        showToast('Long press and copy');
-    }
-});
+        // 🔥 VISUAL FEEDBACK
+        copyBtn.innerText = '✓ Selected';
+        tokenInput.style.borderColor = '#22c55e';
+
+        setTimeout(() => {
+            copyBtn.innerText = '📋 Copy Referral Code';
+            tokenInput.style.borderColor = '#3b82f6';
+        }, 2000);
+    });
 })();
 </script>
 

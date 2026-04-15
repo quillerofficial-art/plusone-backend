@@ -3,17 +3,14 @@ import express from 'express';
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  // ✅ Prevent caching completely
+  // Disable caching completely
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
 
-  // ✅ Extract token from query string (server-side)
   const token = (req.query.token as string) || '';
-
   const apkUrl = process.env.APK_DOWNLOAD_URL || 'https://plusone-backend-hhs1.onrender.com/plusone.apk';
 
-  // ✅ Server-side rendered token – visible even if JS fails
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -69,17 +66,9 @@ p {
     background: rgba(255,255,255,0.08);
     border-radius: 16px;
 }
-#tokenText {
-    font-size: 14px;
-    margin-bottom: 10px;
-    word-break: break-all;
-    color: #e2e8f0;
-    font-family: monospace;
-}
 .token-input {
     width: 100%;
     padding: 10px;
-    margin-top: 8px;
     background: #1e293b;
     border: 1px solid #3b82f6;
     border-radius: 12px;
@@ -87,6 +76,7 @@ p {
     font-family: monospace;
     text-align: center;
     font-size: 14px;
+    margin-bottom: 12px;
 }
 .copy-btn {
     width: 100%;
@@ -98,7 +88,6 @@ p {
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
-    margin-top: 12px;
 }
 .copy-btn.copied {
     background: #22c55e;
@@ -129,9 +118,7 @@ p {
     <p>Download the app and use this code</p>
     
     <div class="token-box">
-        <div id="tokenText">Your referral code:</div>
-        <!-- ✅ Token is directly rendered from server -->
-        <input type="text" id="tokenInput" class="token-input" readonly value="${escapeHtml(token)}" placeholder="Referral code will appear here">
+        <input type="text" id="tokenInput" class="token-input" readonly value="${escapeHtml(token)}" placeholder="Referral code">
         <button class="copy-btn" id="copyBtn">📋 Copy Referral Code</button>
     </div>
 
@@ -141,28 +128,52 @@ p {
 
 <script>
 (function() {
-    const tokenInput = document.getElementById('tokenInput');
     const copyBtn = document.getElementById('copyBtn');
-    const token = tokenInput.value; // ✅ Already pre-filled by server
+    const tokenInput = document.getElementById('tokenInput');
+    const tokenValue = tokenInput.value;
 
-    if (!token) {
-        tokenInput.placeholder = 'No referral code found';
+    if (!tokenValue) {
         copyBtn.disabled = true;
         copyBtn.style.opacity = '0.5';
+        copyBtn.title = 'No referral code to copy';
     }
 
-    async function copyToken() {
-        if (!token) {
-            alert('No referral code to copy.');
-            return;
+    // Universal copy function that works everywhere
+    function copyToClipboard(text) {
+        // Method 1: Try using the modern Clipboard API (requires HTTPS or localhost)
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopied();
+            }).catch(() => {
+                fallbackCopy(text);
+            });
+        } else {
+            // Method 2: Fallback using textarea (works on HTTP too)
+            fallbackCopy(text);
         }
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        // Make the textarea out of viewport
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, text.length); // For mobile
+        let success = false;
         try {
-            await navigator.clipboard.writeText(token);
-            showCopied();
+            success = document.execCommand('copy');
         } catch (err) {
-            tokenInput.select();
-            document.execCommand('copy');
+            console.error('Fallback copy error:', err);
+        }
+        document.body.removeChild(textarea);
+        if (success) {
             showCopied();
+        } else {
+            alert('Unable to copy. Please manually select and copy the code.');
         }
     }
 
@@ -176,7 +187,14 @@ p {
         }, 2000);
     }
 
-    copyBtn.addEventListener('click', copyToken);
+    copyBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!tokenValue) {
+            alert('No referral code to copy.');
+            return;
+        }
+        copyToClipboard(tokenValue);
+    });
 })();
 </script>
 </body>
@@ -186,7 +204,6 @@ p {
   res.send(html);
 });
 
-// Helper to escape HTML to prevent XSS
 function escapeHtml(str: string): string {
   if (!str) return '';
   return str

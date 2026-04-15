@@ -3,20 +3,26 @@ import express from 'express';
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  // Token from query string (e.g., ?token=abc)
-  let token = (req.query.token as string) || '';
-  
-  // If token is empty, try to read from referer or hash? Not possible server-side.
-  // But we'll also provide a client-side fallback to read from hash.
+  // ✅ Prevent caching completely
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  // ✅ Extract token from query string (server-side)
+  const token = (req.query.token as string) || '';
 
   const apkUrl = process.env.APK_DOWNLOAD_URL || 'https://plusone-backend-hhs1.onrender.com/plusone.apk';
 
+  // ✅ Server-side rendered token – visible even if JS fails
   const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Join PlusOne</title>
 <style>
 * {
@@ -114,12 +120,6 @@ p {
     color: #94a3b8;
     margin-top: 20px;
 }
-.debug {
-    font-size: 10px;
-    color: #ef4444;
-    margin-top: 10px;
-    word-break: break-all;
-}
 </style>
 </head>
 <body>
@@ -129,55 +129,28 @@ p {
     <p>Download the app and use this code</p>
     
     <div class="token-box">
-        <div id="tokenText">Loading referral code...</div>
-        <input type="text" id="tokenInput" class="token-input" readonly placeholder="Referral code will appear here">
+        <div id="tokenText">Your referral code:</div>
+        <!-- ✅ Token is directly rendered from server -->
+        <input type="text" id="tokenInput" class="token-input" readonly value="${escapeHtml(token)}" placeholder="Referral code will appear here">
         <button class="copy-btn" id="copyBtn">📋 Copy Referral Code</button>
     </div>
 
     <a href="${apkUrl}" class="btn" id="downloadBtn">📲 Download App</a>
     <div class="note">After installing, open the app and paste this code during signup.</div>
-    <div id="debugInfo" class="debug"></div>
 </div>
 
 <script>
 (function() {
-    // Helper to get URL parameters
-    function getQueryParam(param) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(param);
-    }
-    
-    // Also check hash fragment (if token is after #)
-    function getHashParam(param) {
-        const hash = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hash);
-        return hashParams.get(param);
-    }
-
-    let token = getQueryParam('token') || getHashParam('token');
-    
-    // Debug info
-    const debugDiv = document.getElementById('debugInfo');
-    debugDiv.innerHTML = 'URL: ' + window.location.href + '<br>Extracted token: ' + (token || '❌ NOT FOUND');
-    
-    const tokenTextDiv = document.getElementById('tokenText');
     const tokenInput = document.getElementById('tokenInput');
     const copyBtn = document.getElementById('copyBtn');
-    
-    if (token) {
-        tokenTextDiv.innerText = 'Your referral code:';
-        tokenInput.value = token;
-        tokenInput.style.display = 'block';
-    } else {
-        tokenTextDiv.innerText = '⚠️ No referral code found in this link.';
-        tokenInput.value = '';
-        tokenInput.style.display = 'block';
+    const token = tokenInput.value; // ✅ Already pre-filled by server
+
+    if (!token) {
+        tokenInput.placeholder = 'No referral code found';
         copyBtn.disabled = true;
         copyBtn.style.opacity = '0.5';
-        debugDiv.innerHTML += '<br>❌ Token missing. Make sure the link contains ?token=YOUR_CODE';
     }
-    
-    // Copy function
+
     async function copyToken() {
         if (!token) {
             alert('No referral code to copy.');
@@ -187,13 +160,12 @@ p {
             await navigator.clipboard.writeText(token);
             showCopied();
         } catch (err) {
-            // Fallback
             tokenInput.select();
             document.execCommand('copy');
             showCopied();
         }
     }
-    
+
     function showCopied() {
         const originalText = copyBtn.innerText;
         copyBtn.innerText = '✓ Copied!';
@@ -203,20 +175,26 @@ p {
             copyBtn.classList.remove('copied');
         }, 2000);
     }
-    
+
     copyBtn.addEventListener('click', copyToken);
-    
-    // No auto-copy on download
-    const downloadBtn = document.getElementById('downloadBtn');
-    // Just let the link work normally
 })();
 </script>
 </body>
 </html>
 `;
 
-  res.setHeader('Content-Type', 'text/html');
   res.send(html);
 });
+
+// Helper to escape HTML to prevent XSS
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export default router;

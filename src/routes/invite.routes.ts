@@ -3,7 +3,12 @@ import express from 'express';
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  const token = req.query.token || '';
+  // Token from query string (e.g., ?token=abc)
+  let token = (req.query.token as string) || '';
+  
+  // If token is empty, try to read from referer or hash? Not possible server-side.
+  // But we'll also provide a client-side fallback to read from hash.
+
   const apkUrl = process.env.APK_DOWNLOAD_URL || 'https://plusone-backend-hhs1.onrender.com/plusone.apk';
 
   const html = `
@@ -63,6 +68,19 @@ p {
     margin-bottom: 10px;
     word-break: break-all;
     color: #e2e8f0;
+    font-family: monospace;
+}
+.token-input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    background: #1e293b;
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+    color: white;
+    font-family: monospace;
+    text-align: center;
+    font-size: 14px;
 }
 .copy-btn {
     width: 100%;
@@ -74,6 +92,7 @@ p {
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    margin-top: 12px;
 }
 .copy-btn.copied {
     background: #22c55e;
@@ -95,64 +114,87 @@ p {
     color: #94a3b8;
     margin-top: 20px;
 }
+.debug {
+    font-size: 10px;
+    color: #ef4444;
+    margin-top: 10px;
+    word-break: break-all;
+}
 </style>
 </head>
 <body>
 <div class="container">
     <div class="logo">PlusOne</div>
     <h1>You're Invited</h1>
-    <p>Download the app and continue</p>
+    <p>Download the app and use this code</p>
+    
     <div class="token-box">
-        <div id="tokenText"></div>
+        <div id="tokenText">Loading referral code...</div>
+        <input type="text" id="tokenInput" class="token-input" readonly placeholder="Referral code will appear here">
         <button class="copy-btn" id="copyBtn">📋 Copy Referral Code</button>
     </div>
+
     <a href="${apkUrl}" class="btn" id="downloadBtn">📲 Download App</a>
-    <div class="note">Use the referral code while signing up.</div>
+    <div class="note">After installing, open the app and paste this code during signup.</div>
+    <div id="debugInfo" class="debug"></div>
 </div>
 
 <script>
 (function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token') || '';
-    const tokenTextDiv = document.getElementById('tokenText');
-    const copyBtn = document.getElementById('copyBtn');
+    // Helper to get URL parameters
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+    
+    // Also check hash fragment (if token is after #)
+    function getHashParam(param) {
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        return hashParams.get(param);
+    }
 
-    // Display token
+    let token = getQueryParam('token') || getHashParam('token');
+    
+    // Debug info
+    const debugDiv = document.getElementById('debugInfo');
+    debugDiv.innerHTML = 'URL: ' + window.location.href + '<br>Extracted token: ' + (token || '❌ NOT FOUND');
+    
+    const tokenTextDiv = document.getElementById('tokenText');
+    const tokenInput = document.getElementById('tokenInput');
+    const copyBtn = document.getElementById('copyBtn');
+    
     if (token) {
-        tokenTextDiv.innerText = "Referral Code: " + token;
+        tokenTextDiv.innerText = 'Your referral code:';
+        tokenInput.value = token;
+        tokenInput.style.display = 'block';
     } else {
-        tokenTextDiv.innerText = "No referral code found";
+        tokenTextDiv.innerText = '⚠️ No referral code found in this link.';
+        tokenInput.value = '';
+        tokenInput.style.display = 'block';
         copyBtn.disabled = true;
         copyBtn.style.opacity = '0.5';
+        debugDiv.innerHTML += '<br>❌ Token missing. Make sure the link contains ?token=YOUR_CODE';
     }
-
-    // Copy function with feedback
-    function copyTokenToClipboard() {
-        if (!token) return false;
-        // Try modern clipboard API
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(token).then(() => {
-                showCopiedFeedback();
-            }).catch(() => {
-                fallbackCopy();
-            });
-        } else {
-            fallbackCopy();
+    
+    // Copy function
+    async function copyToken() {
+        if (!token) {
+            alert('No referral code to copy.');
+            return;
         }
-        return true;
+        try {
+            await navigator.clipboard.writeText(token);
+            showCopied();
+        } catch (err) {
+            // Fallback
+            tokenInput.select();
+            document.execCommand('copy');
+            showCopied();
+        }
     }
-
-    function fallbackCopy() {
-        const textarea = document.createElement('textarea');
-        textarea.value = token;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showCopiedFeedback();
-    }
-
-    function showCopiedFeedback() {
+    
+    function showCopied() {
         const originalText = copyBtn.innerText;
         copyBtn.innerText = '✓ Copied!';
         copyBtn.classList.add('copied');
@@ -161,13 +203,12 @@ p {
             copyBtn.classList.remove('copied');
         }, 2000);
     }
-
-    copyBtn.addEventListener('click', copyTokenToClipboard);
-
-    // Download button - no auto copy, just download
+    
+    copyBtn.addEventListener('click', copyToken);
+    
+    // No auto-copy on download
     const downloadBtn = document.getElementById('downloadBtn');
-    // No extra code needed; href handles download.
-    // If you want to remove any previous onclick, it's already removed.
+    // Just let the link work normally
 })();
 </script>
 </body>

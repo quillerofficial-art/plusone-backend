@@ -130,50 +130,53 @@ p {
 (function() {
     const copyBtn = document.getElementById('copyBtn');
     const tokenInput = document.getElementById('tokenInput');
-    const tokenValue = tokenInput.value;
 
-    if (!tokenValue) {
+    function getToken() {
+        return tokenInput.value.trim();
+    }
+
+    if (!getToken()) {
         copyBtn.disabled = true;
         copyBtn.style.opacity = '0.5';
         copyBtn.title = 'No referral code to copy';
     }
 
-    // Universal copy function that works everywhere
-    function copyToClipboard(text) {
-        // Method 1: Try using the modern Clipboard API (requires HTTPS or localhost)
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => {
-                showCopied();
-            }).catch(() => {
-                fallbackCopy(text);
-            });
-        } else {
-            // Method 2: Fallback using textarea (works on HTTP too)
-            fallbackCopy(text);
-        }
-    }
+    async function copyToClipboard() {
+        const text = getToken();
 
-    function fallbackCopy(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        // Make the textarea out of viewport
-        textarea.style.position = 'fixed';
-        textarea.style.top = '-9999px';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        textarea.setSelectionRange(0, text.length); // For mobile
-        let success = false;
-        try {
-            success = document.execCommand('copy');
-        } catch (err) {
-            console.error('Fallback copy error:', err);
+        if (!text) {
+            alert('No referral code to copy.');
+            return;
         }
-        document.body.removeChild(textarea);
-        if (success) {
+
+        // ✅ METHOD 1 (BEST - modern browsers)
+        try {
+            await navigator.clipboard.writeText(text);
             showCopied();
-        } else {
-            alert('Unable to copy. Please manually select and copy the code.');
+            return;
+        } catch (err) {
+            console.log('Clipboard API failed, using fallback...');
+        }
+
+        // ✅ METHOD 2 (STRONG FALLBACK - mobile friendly)
+        try {
+            tokenInput.removeAttribute('readonly'); // 👈 important for some browsers
+            tokenInput.focus();
+            tokenInput.select();
+            tokenInput.setSelectionRange(0, 99999);
+
+            const success = document.execCommand('copy');
+
+            tokenInput.setAttribute('readonly', true);
+
+            if (success) {
+                showCopied();
+            } else {
+                throw new Error('execCommand failed');
+            }
+        } catch (err) {
+            console.error('Copy failed:', err);
+            alert('Press and hold the code to copy manually.');
         }
     }
 
@@ -181,6 +184,7 @@ p {
         const originalText = copyBtn.innerText;
         copyBtn.innerText = '✓ Copied!';
         copyBtn.classList.add('copied');
+
         setTimeout(() => {
             copyBtn.innerText = originalText;
             copyBtn.classList.remove('copied');
@@ -189,11 +193,7 @@ p {
 
     copyBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        if (!tokenValue) {
-            alert('No referral code to copy.');
-            return;
-        }
-        copyToClipboard(tokenValue);
+        copyToClipboard();
     });
 })();
 </script>

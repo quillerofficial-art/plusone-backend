@@ -245,9 +245,36 @@ p {
     }
 
     copyBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        copyToClipboard();
-    });
+    e.preventDefault();
+
+    const text = tokenInput.value;
+
+    if (!text) {
+        alert('No referral code');
+        return;
+    }
+
+    // Select text forcefully
+    tokenInput.removeAttribute('readonly');
+    tokenInput.focus();
+    tokenInput.select();
+    tokenInput.setSelectionRange(0, 99999);
+
+    // Try copy (may fail silently)
+    let copied = false;
+    try {
+        copied = document.execCommand('copy');
+    } catch (e) {}
+
+    tokenInput.setAttribute('readonly', true);
+
+    // ✅ ALWAYS give feedback
+    if (copied) {
+        showToast('Copied!');
+    } else {
+        showToast('Long press and copy');
+    }
+});
 })();
 </script>
 

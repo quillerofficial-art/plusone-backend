@@ -87,6 +87,39 @@ cron.schedule('0 2 * * *', async () => {
   }
 });
 
+// Delete notifications older than 7 days
+cron.schedule('0 2 * * *', async () => {
+  console.log('Deleting old notifications...');
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  try {
+    // First delete from user_notifications (if no cascade)
+    const { error: userNotifError } = await supabase
+      .from('user_notifications')
+      .delete()
+      .lt('created_at', sevenDaysAgo.toISOString());
+    
+    if (userNotifError) {
+      console.error('Error deleting user_notifications:', userNotifError);
+    }
+    
+    // Then delete from notifications
+    const { error: notifError } = await supabase
+      .from('notifications')
+      .delete()
+      .lt('created_at', sevenDaysAgo.toISOString());
+    
+    if (notifError) {
+      console.error('Error deleting notifications:', notifError);
+    } else {
+      console.log('Old notifications cleaned up');
+    }
+  } catch (err) {
+    console.error('Cleanup failed:', err);
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)

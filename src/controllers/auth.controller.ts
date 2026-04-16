@@ -15,7 +15,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
   // Mark email as verified for 15 minutes
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-  await supabase
+  await supabaseAdmin
     .from('email_verifications')
     .upsert({ email, verified: true, expires_at: expiresAt.toISOString() });
 
@@ -43,7 +43,7 @@ export const signup = async (req: Request, res: Response) => {
 
   try {
     // 1. Validate invitation token
-    const { data: invToken, error: tokenError } = await supabase
+    const { data: invToken, error: tokenError } = await supabaseAdmin   // ✅ change
       .from('invitation_tokens')
       .select('*')
       .eq('token', token)
@@ -56,7 +56,7 @@ export const signup = async (req: Request, res: Response) => {
     }
 
     // 2. Check if position is still vacant
-    const { data: parent, error: parentError } = await supabase
+    const { data: parent, error: parentError } = await supabaseAdmin
       .from('users')
       .select('left_child_id, right_child_id')
       .eq('id', invToken.parent_id)
@@ -74,7 +74,7 @@ export const signup = async (req: Request, res: Response) => {
     }
     
     // 2.5 Check if email is verified
-    const { data: verif, error: verifError } = await supabase
+    const { data: verif, error: verifError } = await supabaseAdmin   // ← supabaseAdmin
      .from('email_verifications')
      .select('verified, expires_at')
      .eq('email', email)
@@ -99,7 +99,7 @@ export const signup = async (req: Request, res: Response) => {
     
     // 4. Insert into public.users
     const referralCode = generateReferralCode()
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from('users')
       .insert({
         id: userId,
@@ -116,38 +116,45 @@ export const signup = async (req: Request, res: Response) => {
      if (dbError) throw dbError  // ✅ Throw, not return
 
     // 5. Update parent's child pointer
+    // 5. Update parent's child pointer
     const updateField = invToken.position === 'left' 
-      ? { left_child_id: userId } 
-      : { right_child_id: userId }
-    await supabase
-      .from('users')
-      .update(updateField)
-      .eq('id', invToken.parent_id)
+     ? { left_child_id: userId } 
+     : { right_child_id: userId }
+
+    const { data: updatedRows, error: updateError } = await supabaseAdmin
+  .from('users')
+  .update(updateField)
+  .eq('id', invToken.parent_id)
+  .select('id');
+
+if (updateError || !updatedRows || updatedRows.length === 0) {
+  throw new Error('Failed to update parent child pointer');
+}
 
     // 6. Increment downline for ancestors
     await incrementAncestorsDownline(userId)
 
     // 7. Mark token as used
-    await supabase
+    await supabaseAdmin
       .from('invitation_tokens')
       .update({ used: true })
       .eq('id', invToken.id)
 
     // ✅ Ensure child's parent_id is correct (permanent fix)
-    const { data: childCheck } = await supabase
+    const { data: childCheck } = await supabaseAdmin
      .from('users')
      .select('parent_id')
      .eq('id', userId)
      .single();
 
     if (childCheck?.parent_id !== invToken.parent_id) {
-     await supabase
+     await supabaseAdmin
      .from('users')
      .update({ parent_id: invToken.parent_id })
      .eq('id', userId);
     }
     successResponse(res, { message: 'User created successfully', userId })
-    await supabase.from('email_verifications').delete().eq('email', email);
+    await supabaseAdmin.from('email_verifications').delete().eq('email', email);
   } catch (err) {
      if (userId) {
       await supabaseAdmin.auth.admin.deleteUser(userId)
@@ -262,7 +269,7 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
   }
 
   try {
-    const { data: invToken, error } = await supabase
+    const { data: invToken, error } = await supabaseAdmin
       .from('invitation_tokens')
       .select('sponsor_id')
       .eq('token', token)
@@ -274,7 +281,7 @@ export const getReferrerInfo = async (req: Request, res: Response) => {
       return errorResponse(res, 'Invalid or expired invitation token' )
     }
 
-    const { data: sponsor, error: sponsorError } = await supabase
+    const { data: sponsor, error: sponsorError } = await supabaseAdmin
       .from('users')
       .select('name, email')
       .eq('id', invToken.sponsor_id)
@@ -305,7 +312,7 @@ export const sendOtp = async (req: Request, res: Response) => {
   }
 
   try {
-    const { data: users, error: userError } = await supabase
+    const { data: users, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', email);

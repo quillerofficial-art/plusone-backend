@@ -1,9 +1,10 @@
 import { Request, Response } from 'express'
-import { supabase } from '../config/supabase'
+import { supabase, supabaseAdmin} from '../config/supabase'
 import crypto from 'crypto'
 import { isDescendant } from '../utils/helpers'
 import { successResponse, errorResponse } from '../utils/response'
 import logger from '../utils/logger'
+
 
 // Generate invitation token for a specific parent and position
 export const generateInvite = async (req: Request, res: Response) => {
@@ -15,7 +16,7 @@ export const generateInvite = async (req: Request, res: Response) => {
 
   try {
     // Check if parent exists
-    const { data: parent, error: parentError } = await supabase
+    const { data: parent, error: parentError } = await supabaseAdmin   // ← supabaseAdmin
       .from('users')
       .select('left_child_id, right_child_id')
       .eq('id', parent_id)
@@ -40,7 +41,7 @@ export const generateInvite = async (req: Request, res: Response) => {
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await supabaseAdmin
       .from('invitation_tokens')
       .insert({
         token,
@@ -73,7 +74,7 @@ export const generateInvite = async (req: Request, res: Response) => {
 // Get root node of logged in user
 export const getRoot = async (req: Request, res: Response) => {
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('id, name, email, mobile_number, profile_pic_url, subscription_status, left_child_id, right_child_id')
       .eq('id', req.user!.id)
@@ -96,7 +97,7 @@ export const getChildren = async (req: Request, res: Response) => {
   const nodeIdStr = Array.isArray(nodeId) ? nodeId[0] : nodeId
 
   try {
-    const { data: parent, error: parentError } = await supabase
+    const { data: parent, error: parentError } = await supabaseAdmin
       .from('users')
       .select('left_child_id, right_child_id')
       .eq('id', nodeIdStr)
@@ -115,7 +116,7 @@ export const getChildren = async (req: Request, res: Response) => {
       return successResponse(res, [])
     }
 
-    const { data: children, error } = await supabase
+    const { data: children, error } = await supabaseAdmin 
       .from('users')
       .select(`
         id,

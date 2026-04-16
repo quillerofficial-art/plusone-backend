@@ -120,7 +120,6 @@ p {
     margin-top: 20px;
 }
 
-/* Toast */
 .toast {
     position: fixed;
     bottom: 30px;
@@ -165,62 +164,71 @@ p {
     const copyBtn = document.getElementById('copyBtn');
     const tokenInput = document.getElementById('tokenInput');
 
-    function selectText() {
-        tokenInput.removeAttribute('readonly');
-        tokenInput.focus();
-        tokenInput.select();
-        tokenInput.setSelectionRange(0, 99999);
-        tokenInput.setAttribute('readonly', true);
-    }
-
-    function showToast(msg) {
+    function showToast(msg, isError = false) {
         const toast = document.createElement('div');
         toast.innerText = msg;
-
         toast.style.position = 'fixed';
         toast.style.bottom = '30px';
         toast.style.left = '50%';
         toast.style.transform = 'translateX(-50%)';
-        toast.style.background = '#22c55e';
+        toast.style.background = isError ? '#e53e3e' : '#22c55e';
         toast.style.color = '#fff';
         toast.style.padding = '12px 20px';
         toast.style.borderRadius = '30px';
+        toast.style.fontSize = '14px';
         toast.style.zIndex = '9999';
-
+        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        toast.style.animation = 'fadeInOut 2s ease';
         document.body.appendChild(toast);
-
         setTimeout(() => toast.remove(), 2000);
     }
 
-    copyBtn.addEventListener('click', function(e) {
+    async function copyToClipboard(text) {
+        // Modern Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                console.error('Clipboard API failed:', err);
+                return false;
+            }
+        }
+        // Fallback for old browsers
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return true;
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            return false;
+        }
+    }
+
+    copyBtn.addEventListener('click', async function(e) {
         e.preventDefault();
-
         const text = tokenInput.value.trim();
-
         if (!text) {
-            alert('No referral code');
+            showToast('No referral code to copy', true);
             return;
         }
 
-        // 🔥 FORCE SELECT
-        selectText();
-
-        // 🔥 TRY COPY (optional, ignore result)
-        try {
-            document.execCommand('copy');
-        } catch (e) {}
-
-        // 🔥 ALWAYS SHOW INSTRUCTION
-        showToast('Code selected — press & hold to copy');
-
-        // 🔥 VISUAL FEEDBACK
-        copyBtn.innerText = '✓ Selected';
-        tokenInput.style.borderColor = '#22c55e';
-
-        setTimeout(() => {
-            copyBtn.innerText = '📋 Copy Referral Code';
-            tokenInput.style.borderColor = '#3b82f6';
-        }, 2000);
+        const success = await copyToClipboard(text);
+        if (success) {
+            showToast('Referral code copied!');
+            copyBtn.innerText = '✓ Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.innerText = '📋 Copy Referral Code';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        } else {
+            showToast('Failed to copy. Please select and copy manually.', true);
+        }
     });
 })();
 </script>

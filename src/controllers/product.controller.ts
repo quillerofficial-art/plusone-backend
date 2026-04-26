@@ -10,19 +10,26 @@ import { uploadToBackblaze } from '../utils/s3Upload';
 // Get products by category (public)
 export const getProductsByCategory = async (req: Request, res: Response) => {
   let { category } = req.params;
-  if (Array.isArray(category)) category = category[0]; // handle array case
+  const { search } = req.query;  // search query parameter
+  if (Array.isArray(category)) category = category[0];
+  
   if (!category || !Object.values(ProductCategory).includes(category as ProductCategory)) {
     return res.status(400).json({ message: 'Invalid category' });
   }
 
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .eq('category', category)
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
+    if (search && typeof search === 'string') {
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -131,7 +138,6 @@ export const createNewArrivalProduct = async (req: Request, res: Response) => {
   }
 };
 
-// Admin: Update product
 // Admin: Update product
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;

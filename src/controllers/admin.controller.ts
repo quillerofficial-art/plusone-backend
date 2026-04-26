@@ -43,25 +43,46 @@ export const getAllUsers = async (req: Request, res: Response) => {
 
 // Soft delete user
 export const deleteUser = async (req: Request, res: Response) => {
-  const { id } = req.params
+  const { id } = req.params;
 
   try {
+    // 1. User ki current info lo (parent_id aur position)
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('parent_id, position')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 2. Agar user ka parent hai, to parent ke child pointer null karo
+    if (user.parent_id) {
+      const updateField = user.position === 'left' 
+        ? { left_child_id: null } 
+        : { right_child_id: null };
+      await supabase
+        .from('users')
+        .update(updateField)
+        .eq('id', user.parent_id);
+    }
+
+    // 3. User ko soft delete karo
     const { error } = await supabase
       .from('users')
       .update({ is_deleted: true })
       .eq('id', id)
-      .eq('role', 'user')
+      .eq('role', 'user');   // sirf normal users ko delete karo
 
-    if (error) {
-      return res.status(400).json({ message: error.message })
-    }
+    if (error) throw error;
 
-    successResponse(res, { message: 'User deleted' })
+    successResponse(res, { message: 'User deleted successfully' });
   } catch (err) {
-    logger.error('Error in deleteUser:', { error: err, userId: req.user?.id })
-    res.status(500).json({ message: 'Server error' })
+    logger.error('Error in deleteUser:', { error: err, userId: req.user?.id });
+    errorResponse(res, 'Failed to delete user');
   }
-}
+};
 
 // Send notification to selected users
 export const sendNotification = async (req: Request, res: Response) => {

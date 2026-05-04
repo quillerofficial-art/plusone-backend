@@ -68,8 +68,6 @@ export const deleteUser = async (req: Request, res: Response) => {
         .eq('id', user.parent_id);
     }
 
-    // After soft delete, recalculate ancestors and user's own downline
-    await supabase.rpc('increment_ancestors_downline', { user_id: id });
 
     // 3. User ko soft delete karo
     const { error } = await supabase
@@ -79,6 +77,9 @@ export const deleteUser = async (req: Request, res: Response) => {
       .eq('role', 'user');   // sirf normal users ko delete karo
 
     if (error) throw error;
+
+    // After soft delete, recalculate ancestors' downline
+    await supabase.rpc('recalc_user_and_ancestors', { target_id: id });
 
     successResponse(res, { message: 'User deleted successfully' });
   } catch (err) {

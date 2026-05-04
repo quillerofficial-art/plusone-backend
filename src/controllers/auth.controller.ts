@@ -131,9 +131,9 @@ if (updateError || !updatedRows || updatedRows.length === 0) {
   throw new Error('Failed to update parent child pointer');
 }
 
-    // 6. Increment downline for ancestors
-    await incrementAncestorsDownline(userId)
-
+    // 6. Recalculate downline for ancestors (active subscribers only)
+    await supabase.rpc('recalc_user_and_ancestors', { target_id: userId });
+    
     // 7. Mark token as used
     await supabaseAdmin
       .from('invitation_tokens')

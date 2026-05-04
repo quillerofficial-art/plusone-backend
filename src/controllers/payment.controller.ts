@@ -236,6 +236,9 @@ const activateSubscription = async (orderId: string) => {
     })
     .eq('id', transaction.user_id);
 
+  // ✅ ADD THIS LINE – Recalculate downline for this user and all ancestors
+  await supabase.rpc('recalc_user_and_ancestors', { target_id: transaction.user_id });
+
   // 5. save subscription dates
   await supabase
     .from('payment_transactions')

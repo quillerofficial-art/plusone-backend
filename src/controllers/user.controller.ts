@@ -82,7 +82,7 @@ export const getNotifications = async (req: Request, res: Response) => {
         id,
         is_read,
         created_at,
-        notifications (message, created_at)
+        notifications (title, message, created_at)
       `)
       .eq('user_id', req.user!.id)
       .order('created_at', { ascending: false })

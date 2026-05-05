@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { s3Client } from '../config/storage'
-import { supabase } from '../config/supabase'
+import { supabase, supabaseAdmin } from '../config/supabase'
 import { v4 as uuidv4 } from 'uuid'
 import { uploadToBackblaze } from '../utils/s3Upload'
 import logger from '../utils/logger'
@@ -14,7 +14,7 @@ export const uploadProfilePic = async (req: Request, res: Response) => {
   try {
     const publicUrl = await uploadToBackblaze(req.file, 'profile-pics');
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({ profile_pic_url: publicUrl })
       .eq('id', req.user!.id);

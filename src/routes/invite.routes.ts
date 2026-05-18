@@ -491,7 +491,7 @@ router.get('/', (req, res) => {
     }
     .sticky-download {
       position: fixed;
-      bottom: 0;
+      bottom: 20px;
       left: 0;
       width: 100%;
       padding: 12px 16px 18px;
@@ -719,10 +719,18 @@ router.get('/', (req, res) => {
 </div>
 
 <script>
-  // initialize lucide icons after DOM
-  lucide.createIcons();
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    } else {
+      // Agar lucide abhi load nahi hua, thoda wait karo
+      setTimeout(function() {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }, 500);
+    }
+  });
 
-  // copy referral code
+  // copy referral code wala code yahan rahega
   const refCodeSpan = document.getElementById('referralCode');
   if(refCodeSpan) {
     refCodeSpan.addEventListener('click', () => {
@@ -734,7 +742,6 @@ router.get('/', (req, res) => {
       }, 1500);
     });
   }
-
 </script>
 </body>
 </html>

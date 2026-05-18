@@ -39,7 +39,14 @@ router.get('/', (req, res) => {
       box-shadow: 0 0 30px rgba(0,0,0,0.05);
       margin: 0 auto;
       position: relative;
-      padding-bottom: 90px;
+    }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 20px 6px;
+      font-size: 14px;
+      font-weight: 500;
+      background: white;
     }
     .header {
       display: flex;
@@ -51,8 +58,17 @@ router.get('/', (req, res) => {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-style: italic;
     }
+    .logo .plus {
+      color: black;
+    }
+    .logo .one {
+      color: blue;
+    }
+    .logo {
+     font-style: italic;
+    }
+    
     .logo img {
       width: 34px;
       height: 34px;
@@ -66,6 +82,11 @@ router.get('/', (req, res) => {
     }
     .logo span:first-child { color: black; }
     .logo span:last-child { color: #2b59ea; }
+    .menu {
+      font-size: 24px;
+      cursor: default;
+    }
+    /* ------- NEW HERO SECTION (exactly like second image) ------- */
     .hero {
       padding: 20px 20px 0;
       margin-bottom: 70px;
@@ -108,8 +129,6 @@ router.get('/', (req, res) => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
       margin-bottom: 18px;
     }
     .ref-label {
@@ -118,14 +137,15 @@ router.get('/', (req, res) => {
       color: #9aa0ae;
       letter-spacing: 1px;
     }
+
     .ref-code {
       font-weight: 800;
       font-size: 14px;
       color: #2b59ea;
-      word-break: break-all;
+      word-break: break-all;      /* ✅ FIX: token टूटेगा, बाहर नहीं जाएगा */
       text-align: right;
-      cursor: pointer;
       max-width: 70%;
+      cursor: pointer;
     }
     .ref-code:hover {
       background: #eef2ff;
@@ -144,7 +164,6 @@ router.get('/', (req, res) => {
       align-items: center;
       justify-content: center;
       gap: 10px;
-      cursor: pointer;
       box-shadow: 0 8px 20px rgba(43,89,234,.25);
     }
     .download-btn:hover {
@@ -166,13 +185,16 @@ router.get('/', (req, res) => {
       box-shadow: 0 12px 24px rgba(0,0,0,0.1);
     }
     .feature-card {
-      margin: 40px 0px 70px;
+      margin: 40px 0px 70px; /* TOP | SIDE | BOTTOM */
       padding: 50px 40px;
+      border-radius: 0px;
       background: radial-gradient(circle at center, #140000 0%, #000000 80%);
       text-align: center;
       color: white;
       box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     }
+
+/* LOGO GLOW EFFECT */
     .feature-logo-wrap {
       width: 120px;
       height: 120px;
@@ -184,11 +206,14 @@ router.get('/', (req, res) => {
       justify-content: center;
       box-shadow: 0 0 40px rgba(255, 0, 0, 0.2);
     }
+
     .feature-logo-wrap img {
       width: 90px;
       height: 90px;
       border-radius: 50%;
     }
+
+    /* TITLE */
     .feature-title {
       font-size: 22px;
       font-weight: 800;
@@ -196,6 +221,8 @@ router.get('/', (req, res) => {
       line-height: 1.4;
       margin-bottom: 14px;
     }
+
+    /* DESC */
     .feature-desc {
       font-size: 14px;
       color: #9ca3af;
@@ -203,28 +230,36 @@ router.get('/', (req, res) => {
       margin-bottom: 30px;
       padding: 0 10px;
     }
+
+     /* STATS */
     .feature-stats {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
+
     .stat {
-      flex: 1;
+     flex: 1;
     }
-    .stat h4 {
+
+     .stat h4 {
       font-size: 22px;
       font-weight: 800;
     }
+
     .stat span {
-      font-size: 11px;
-      color: #9ca3af;
-      letter-spacing: 1px;
+     font-size: 11px;
+     color: #9ca3af;
+     letter-spacing: 1px;
     }
+
+     /* DIVIDER */
     .divider {
       width: 1px;
       height: 40px;
       background: rgba(255,255,255,0.15);
     }
+  
     .steps {
       padding: 0px 20px 30px;
       text-align: center;
@@ -251,7 +286,6 @@ router.get('/', (req, res) => {
       font-size: 12px;
       font-weight: 700;
       margin-bottom: 16px;
-      display: inline-block;
       box-shadow: 0 8px 18px rgba(43,89,234,0.25);
     }
     .step-title {
@@ -267,42 +301,54 @@ router.get('/', (req, res) => {
       margin-bottom: 18px;
       padding: 0 12px;
     }
+    
     .step-img {
       width: 100%;
       border-radius: 26px;
       margin-top: 18px;
       box-shadow: 0 12px 30px rgba(0,0,0,0.1);
     }
+    
     .engine-section {
       padding: 30px 20px;
     }
+
     .engine-title {
       font-size: 24px;
       font-weight: 800;
       text-align: center;
       margin-bottom: 8px;
     }
+
     .engine-sub {
       text-align: center;
       font-size: 14px;
       color: #6b7280;
       margin-bottom: 24px;
     }
-    .engine-card {
+
+/* CARD BASE */
+   .engine-card {
       border-radius: 32px;
       padding: 26px;
       margin-bottom: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.05);
     }
-    .engine-card.light {
+
+    /* LIGHT CARD */
+   .engine-card.light {
       background: #f1f3f7;
     }
+
+    /* BLUE CARD */
     .engine-card.blue {
       background: linear-gradient(135deg, #4f6cff, #2b59ea);
       color: white;
       position: relative;
       overflow: hidden;
     }
+
+    /* ICON */
     .engine-icon {
       width: 52px;
       height: 52px;
@@ -312,12 +358,17 @@ router.get('/', (req, res) => {
       align-items: center;
       justify-content: center;
       margin-bottom: 16px;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+
+      box-shadow: 
+      0 6px 12px rgba(0,0,0,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.6);
     }
+
     .engine-icon.blue-bg {
       background: rgba(255,255,255,0.15);
       backdrop-filter: blur(6px);
     }
+
     .engine-card h4 {
       font-size: 19px;
       font-weight: 800;
@@ -325,14 +376,17 @@ router.get('/', (req, res) => {
       margin-bottom: 8px;
       color: #0f172a;
     }
+
     .engine-card p {
       font-size: 14px;
       color: #6b7280;
       line-height: 1.6;
     }
+
     .engine-card.blue p {
       color: rgba(255,255,255,0.9);
     }
+    
     .engine-card.blue::after {
       content: "";
       position: absolute;
@@ -343,6 +397,7 @@ router.get('/', (req, res) => {
       background: rgba(255,255,255,0.08);
       border-radius: 24px;
     }
+
     .verified {
       background: #eef2ff;
       display: inline-flex;
@@ -354,11 +409,20 @@ router.get('/', (req, res) => {
       font-weight: 600;
       margin: 8px 0;
     }
+    .step-img {
+      width: 100%;
+      border-radius: 24px;
+      margin-top: 12px;
+      background: #f8f9fe;
+    }
+   
     .footer {
       padding: 40px 20px 30px;
       text-align: center;
       background: #f8f9fc;
     }
+
+/* LOGO */
     .footer-brand {
       display: flex;
       align-items: center;
@@ -366,24 +430,31 @@ router.get('/', (req, res) => {
       gap: 10px;
       margin-bottom: 14px;
     }
+
     .footer-brand img {
       width: 36px;
       height: 36px;
       border-radius: 50%;
     }
+
     .footer-brand span {
-      font-size: 22px;
-      font-weight: 800;
+     font-size: 22px;
+     font-weight: 800;
     }
-    .footer-brand .blue {
-      color: #2b59ea;
+
+   .footer-brand .blue {
+     color: #2b59ea;
     }
-    .footer-copy {
+
+/* COPYRIGHT */
+   .footer-copy {
       font-size: 12px;
       color: #9ca3af;
       letter-spacing: 1px;
       margin-bottom: 22px;
     }
+
+/* LINKS */
     .footer-links {
       display: flex;
       justify-content: space-between;
@@ -391,6 +462,32 @@ router.get('/', (req, res) => {
       font-weight: 700;
       color: #9ca3af;
       letter-spacing: 2px;
+    }
+    
+    .bottom-tabs {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 20px 14px;
+      border-top: 1px solid #eceef2;
+      font-weight: 600;
+      font-size: 12px;
+      color: #8e8fa3;
+    }
+    .active-tab {
+      color: #2b59ea;
+    }
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: default;
+    }
+    button {
+      cursor: pointer;
     }
     .sticky-download {
       position: fixed;
@@ -401,6 +498,8 @@ router.get('/', (req, res) => {
       background: transparent;
       z-index: 999;
     }
+
+/* BUTTON */
     .sticky-download button {
       width: 100%;
       padding: 16px;
@@ -410,17 +509,24 @@ router.get('/', (req, res) => {
       color: white;
       font-size: 16px;
       font-weight: 800;
+
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      cursor: pointer;
+
       box-shadow: 0 10px 25px rgba(43,89,234,0.35);
+    }
+
+/* SAFE SPACE (content cut ना हो) */
+   .phone-container {
+      padding-bottom: 90px;
     }
   </style>
 </head>
 <body>
 <div class="phone-container">
+  <!-- header -->
   <div class="header">
     <div class="logo">
       <img src="/images/logo.jpeg" alt="logo">
@@ -428,38 +534,69 @@ router.get('/', (req, res) => {
     </div>
   </div>
 
+  <!-- HERO SECTION - exactly like second image (1000123580.jpg) -->
   <div class="hero">
-    <div class="premium-badge"><i data-lucide="star" style="width:14px;height:14px;"></i>PREMIUM LIFESTYLE HUB</div>
-    <h1>Elevate Your<span>Essence.</span></h1>
+    <div class="premium-badge"> <i data-lucide="star" style="width:14px;height:14px;"></i>PREMIUM LIFESTYLE HUB</div>
+    <h1>
+     Elevate Your
+     <span>Essence.</span>
+    </h1>
     <div class="hero-desc">The ultimate destination for luxury products. Curated collections, seamless authentication, and a community of elite tastemakers.</div>
     <div class="ref-box">
       <span class="ref-label">REFERRAL CODE</span>
       <span class="ref-code" id="referralCode">${token}</span>
     </div>
     <button class="download-btn" id="downloadMainBtn">Instantly Download</button>
-    <div class="brands"><span>DIOR</span><span>ROLEX</span><span>CHANEL</span><span>PRADA</span></div>
+    <div class="brands">
+      <span>DIOR</span> <span>ROLEX</span> <span>CHANEL</span> <span>PRADA</span>
+    </div>
     <img class="phone-mock" src="/images/phone-mock.jpeg" alt="app">
   </div>
 
   <div class="feature-card">
-    <div class="feature-logo-wrap">
-      <img src="/images/logo.jpeg" />
-    </div>
-    <h3 class="feature-title">Your Actions, Your Rewards   Welcome to PlusOne.</h3>
-    <p class="feature-desc">Be part of a fast-growing community where your every action unlocks rewards, savings, and access to premium brands.</p>
-    <div class="feature-stats">
-      <div class="stat"><h4>10k+</h4><span>USERS</span></div>
-      <div class="divider"></div>
-      <div class="stat"><h4>5K</h4><span>BRANDS</span></div>
-      <div class="divider"></div>
-      <div class="stat"><h4>4.9</h4><span>RATING</span></div>
-    </div>
+
+  <div class="feature-logo-wrap">
+    <img src="/images/logo.jpeg" />
   </div>
 
+  <h3 class="feature-title">
+    Your Actions, Your Rewards   Welcome to PlusOne.
+  </h3>
+
+  <p class="feature-desc">
+    Be part of a fast-growing community where your every action unlocks rewards, savings, and access to premium brands.
+  </p>
+
+  <div class="feature-stats">
+    
+    <div class="stat">
+      <h4>10k+</h4>
+      <span>USERS</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="stat">
+      <h4>5K</h4>
+      <span>BRANDS</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="stat">
+      <h4>4.9</h4>
+      <span>RATING</span>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- how to get started -->
   <div class="steps">
     <h3>How to Get Started</h3>
     <div class="steps-sub">Follow these simple steps to join the PlusOne elite community.</div>
 
+    <!-- step 1 -->
     <div class="step-card">
       <div class="step-badge">STEP 1</div>
       <div class="step-title">Copy Referral code and Download APK</div>
@@ -467,14 +604,19 @@ router.get('/', (req, res) => {
       <img class="step-img" src="/images/step1.jpeg" alt="step1">
     </div>
 
+    <!-- step 2 -->
     <div class="step-card">
       <div class="step-badge">STEP 2</div>
       <div class="step-title">Install the app</div>
       <div class="step-desc">Once the download is complete, open the downloaded APK file and tap Install. If prompted, allow installation from unknown sources to proceed with the experience.</div>
-      <div class="verified"><i data-lucide="shield-check" style="width:14px;height:14px;"></i>Verified Secure Installation</div>
+      <div class="verified" id="verifiedBadge">
+        <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
+        Verified Secure Installation
+      </div>
       <img class="step-img" src="/images/step2.jpeg" alt="step2">
     </div>
 
+    <!-- step 3 -->
     <div class="step-card">
       <div class="step-badge">STEP 3</div>
       <div class="step-title">Paste referral code and create account</div>
@@ -483,78 +625,127 @@ router.get('/', (req, res) => {
     </div>
   </div>
 
-  <div style="margin:20px 20px 10px; background:white; border-radius:28px; padding:20px; border:1px solid #efeff5;">
-    <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">Where to Paste Your Referral Code?</h3>
-    <p style="font-size:13px; color:#5f6075; margin-bottom:16px;">Follow these simple steps to apply your referral code and unlock exclusive benefits.</p>
-    <ul style="list-style:none;">
-      <li style="display:flex; gap:12px; margin-bottom:20px;">
-        <span style="background:#eef2ff; width:26px; height:26px; border-radius:30px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#2b59ea;">1</span>
+  <!-- WHERE TO PASTE REFERRAL CODE? SECTION (from first image 1000123578) -->
+  <div style="margin: 20px 20px 10px 20px; background: white; border-radius: 28px; padding: 20px; border: 1px solid #efeff5;">
+    <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Where to Paste Your Referral Code?</h3>
+    <p style="font-size: 13px; color: #5f6075; margin-bottom: 16px;">Follow these simple steps to apply your referral code and unlock exclusive benefits.</p>
+    <ul style="list-style: none;">
+      <li style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <span style="background: #eef2ff; width: 26px; height: 26px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2b59ea;">1</span>
         <div><strong>Sign Up / Create Account</strong><br>Fill in your basic details to get started.</div>
       </li>
-      <li style="display:flex; gap:12px; margin-bottom:20px;">
-        <span style="background:#eef2ff; width:26px; height:26px; border-radius:30px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#2b59ea;">2</span>
+      <li style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <span style="background: #eef2ff; width: 26px; height: 26px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2b59ea;">2</span>
         <div><strong>Find "Referral ID (Optional)"</strong><br>Scroll down to the referral code field.</div>
       </li>
-      <li style="display:flex; gap:12px; margin-bottom:20px;">
-        <span style="background:#eef2ff; width:26px; height:26px; border-radius:30px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#2b59ea;">3</span>
+      <li style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <span style="background: #eef2ff; width: 26px; height: 26px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2b59ea;">3</span>
         <div><strong>Paste Your Code</strong><br>Paste your referral code in the box as shown.</div>
       </li>
-      <li style="display:flex; gap:12px;">
-        <span style="background:#eef2ff; width:26px; height:26px; border-radius:30px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#2b59ea;">4</span>
+      <li style="display: flex; gap: 12px;">
+        <span style="background: #eef2ff; width: 26px; height: 26px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #2b59ea;">4</span>
         <div><strong>Create Account</strong><br>Complete your sign up and enjoy exclusive rewards.</div>
       </li>
     </ul>
   </div>
   
   <div class="engine-section">
-    <h3 class="engine-title">Engineered for Elegance</h3>
-    <p class="engine-sub">Our core principles drive every interaction within the PlusOne ecosystem.</p>
-    <div class="engine-card light">
-      <div class="engine-icon"><i data-lucide="shield-check"></i></div>
-      <h4>Guaranteed Authenticity</h4>
-      <p>Every item undergoes a 12-point forensic verification by our in-house experts before shipment.</p>
+
+  <h3 class="engine-title">Engineered for Elegance</h3>
+  <p class="engine-sub">
+    Our core principles drive every interaction within the PlusOne ecosystem.
+  </p>
+
+  <!-- CARD 1 -->
+  <div class="engine-card light">
+    <div class="engine-icon">
+      <i data-lucide="shield-check"></i>
     </div>
-    <div class="engine-card blue">
-      <div class="engine-icon blue-bg"><i data-lucide="zap"></i></div>
-      <h4>Real-Time Marketplace</h4>
-      <p>Bid, buy, and trade in a high-frequency environment designed for high-end lifestyle enthusiasts.</p>
-    </div>
-    <div class="engine-card light">
-      <div class="engine-icon"><i data-lucide="users"></i></div>
-      <h4>Exclusive Circle</h4>
-      <p>Unlock access to invite-only product launches and digital-only NFT drops for the community.</p>
-    </div>
+    <h4>Guaranteed Authenticity</h4>
+    <p>
+      Every item undergoes a 12-point forensic verification by our in-house experts before shipment.
+    </p>
   </div>
 
-  <div class="footer">
-    <div class="footer-brand">
-      <img src="/images/logo.jpeg" />
-      <span>Plus<span class="blue">One</span></span>
+  <!-- CARD 2 (BLUE) -->
+  <div class="engine-card blue">
+    <div class="engine-icon blue-bg">
+      <i data-lucide="zap"></i>
     </div>
-    <div class="footer-copy">© 2026 PLUSONE GLOBAL INC.</div>
-    <div class="footer-links"><span>PRIVACY</span><span>TERMS</span><span>SAFETY</span><span>SUPPORT</span></div>
+    <h4>Real-Time Marketplace</h4>
+    <p>
+      Bid, buy, and trade in a high-frequency environment designed for high-end lifestyle enthusiasts.
+    </p>
   </div>
+
+  <!-- CARD 3 -->
+  <div class="engine-card light">
+    <div class="engine-icon">
+      <i data-lucide="users"></i>
+    </div>
+    <h4>Exclusive Circle</h4>
+    <p>
+      Unlock access to invite-only product launches and digital-only NFT drops for the community.
+    </p>
+  </div>
+
+</div>
+
+  <!-- footer -->
+ <div class="footer">
+
+  <div class="footer-brand">
+    <img src="/images/logo.jpeg" />
+    <span>Plus<span class="blue">One</span></span>
+  </div>
+
+  <div class="footer-copy">
+    © 2026 PLUSONE GLOBAL INC.
+  </div>
+
+  <div class="footer-links">
+    <span>PRIVACY</span>
+    <span>TERMS</span>
+    <span>SAFETY</span>
+    <span>SUPPORT</span>
+  </div>
+
 </div>
 
 <div class="sticky-download">
-  <button id="bottomDownloadBtn"><i data-lucide="download"></i> Download PlusOne App</button>
+  <button id="bottomDownloadBtn">
+    <i data-lucide="download"></i>
+    Download PlusOne App
+  </button>
 </div>
 
 <script>
+  // initialize lucide icons after DOM
   lucide.createIcons();
 
-  const refSpan = document.getElementById('referralCode');
-  if(refSpan) {
-    refSpan.addEventListener('click', () => {
-      navigator.clipboard.writeText(refSpan.innerText);
-      const original = refSpan.innerText;
-      refSpan.innerText = '✓ Copied!';
-      setTimeout(() => { refSpan.innerText = original; }, 1500);
+  // copy referral code
+  const refCodeSpan = document.getElementById('referralCode');
+  if(refCodeSpan) {
+    refCodeSpan.addEventListener('click', () => {
+      navigator.clipboard.writeText(refCodeSpan.innerText);
+      const originalText = refCodeSpan.innerText;
+      refCodeSpan.innerText = '✓ Copied!';
+      setTimeout(() => {
+        refCodeSpan.innerText = originalText;
+      }, 1500);
     });
   }
+  
+  // MAIN BUTTON
+   document.getElementById("downloadMainBtn").addEventListener("click", function () {
+     window.location.href = "${apkUrl}";
+    });
 
-  document.getElementById("downloadMainBtn").addEventListener("click", () => window.location.href = "${apkUrl}");
-  document.getElementById("bottomDownloadBtn").addEventListener("click", () => window.location.href = "${apkUrl}");
+// BOTTOM STICKY BUTTON
+    document.getElementById("bottomDownloadBtn").addEventListener("click", function () {
+     window.location.href = "${apkUrl}";
+    });
+
 </script>
 </body>
 </html>
@@ -562,5 +753,15 @@ router.get('/', (req, res) => {
 
   res.send(html);
 });
+
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export default router;

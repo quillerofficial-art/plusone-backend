@@ -120,6 +120,15 @@ cron.schedule('0 2 * * *', async () => {
   }
 });
 
+cron.schedule('0 3 * * *', async () => {
+  console.log('Nightly full downline recalculation started...');
+  const { data: users } = await supabase.from('users').select('id').eq('is_deleted', false);
+  for (const user of users || []) {
+    await supabase.rpc('recalc_user_and_ancestors', { target_id: user.id });
+  }
+  console.log('Nightly recalculation completed.');
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
